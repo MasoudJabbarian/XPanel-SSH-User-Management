@@ -9,13 +9,25 @@ wget -4 https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_aarch
 sudo tar xzf ioncube_loaders_lin_aarch64.tar.gz -C /usr/local
 sudo rm -rf ioncube_loaders_lin_aarch64.tar.gz
 fi
-PHPVERSION=$(php -i | grep /.+/php.ini -oE | sed 's/[^0-9.]*//g')
+PHPVERSION=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
+PHP_FPM_DIR="/etc/php/${PHPVERSION}/fpm"
+PHP_CLI_DIR="/etc/php/${PHPVERSION}/cli"
+ZEND_EXTENSION_PATH="/usr/local/ioncube/ioncube_loader_lin_${PHPVERSION}.so"
+if [ ! -f "$ZEND_EXTENSION_PATH" ]; then echo "ionCube loader not found: $ZEND_EXTENSION_PATH"; exit 1; fi
 
-echo "zend_extension = /usr/local/ioncube/ioncube_loader_lin_${PHPVERSION}.so" > /etc/php/${PHPVERSION::-1}/fpm/conf.d/00-ioncube.ini
-echo "zend_extension = /usr/local/ioncube/ioncube_loader_lin_${PHPVERSION}.so" > /etc/php/${PHPVERSION::-1}/cli/conf.d/00-ioncube.ini
+mkdir -p "${PHP_FPM_DIR}/conf.d" "${PHP_CLI_DIR}/conf.d"
+for ini in "${PHP_FPM_DIR}/php.ini" "${PHP_CLI_DIR}/php.ini" "${PHP_FPM_DIR}/conf.d/"*.ini "${PHP_CLI_DIR}/conf.d/"*.ini; do
+  [ -f "$ini" ] && sed -i "/^[[:space:]]*zend_extension[[:space:]]*=.*ioncube_loader_lin_/d" "$ini"
+done
+printf "%s\\n" "zend_extension = ${ZEND_EXTENSION_PATH}" > "${PHP_FPM_DIR}/conf.d/00-ioncube.ini"
+printf "%s\\n" "zend_extension = ${ZEND_EXTENSION_PATH}" > "${PHP_CLI_DIR}/conf.d/00-ioncube.ini"
 
-PHP_INI_PATH="/etc/php/8.1/fpm/php.ini"
-ZEND_EXTENSION_PATH="/usr/local/ioncube/ioncube_loader_lin_8.1.so"
-grep -q "^zend_extension" $PHP_INI_PATH && sed -i "s@^zend_extension.*@zend_extension = $ZEND_EXTENSION_PATH@" $PHP_INI_PATH || echo "zend_extension = $ZEND_EXTENSION_PATH" >> $PHP_INI_PATH
-sudo systemctl restart php8.1-fpm
+mkdir -p "/etc/systemd/system/php${PHPVERSION}-fpm.service.d"
+cat > "/etc/systemd/system/php${PHPVERSION}-fpm.service.d/override.conf" <<EOF
+[Service]
+ProtectSystem=false
+EOF
+systemctl daemon-reload
+systemctl restart "php${PHPVERSION}-fpm"
 systemctl restart nginx
+php -v | grep -qi "ioncube" || { echo "ionCube failed to load"; exit 1; }
