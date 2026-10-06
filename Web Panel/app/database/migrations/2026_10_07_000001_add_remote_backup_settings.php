@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('remote_backup_folder')->nullable();
             $table->string('remote_backup_username')->nullable();
             $table->text('remote_backup_password')->nullable();
-            $table->unsignedSmallInteger('remote_backup_port')->default(21);
+            $table->unsignedSmallInteger('remote_backup_port')->default(22);
             $table->boolean('remote_backup_ssl')->default(false);
             $table->boolean('remote_backup_enabled')->default(false);
             $table->unsignedInteger('remote_backup_interval_hours')->default(24);
@@ -21,6 +21,9 @@ return new class extends Migration
             $table->string('remote_backup_last_status', 32)->nullable();
             $table->text('remote_backup_last_message')->nullable();
         });
+
+        // Existing remote-backup settings used the old FTP default port.
+        DB::table('settings')->where('remote_backup_port', 21)->update(['remote_backup_port' => 22]);
     }
 
     public function down(): void
