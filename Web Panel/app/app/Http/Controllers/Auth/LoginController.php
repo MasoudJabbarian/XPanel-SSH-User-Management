@@ -23,8 +23,8 @@ class LoginController extends Controller
 
     public function showLoginForm()
     {
-        $bootstrapUsername = trim((string) env('DB_USERNAME', ''));
-        $bootstrapPassword = (string) env('DB_PASSWORD', '');
+        $bootstrapUsername = trim((string) env('PANEL_ADMIN_USERNAME', ''));
+        $bootstrapPassword = (string) env('PANEL_ADMIN_PASSWORD', '');
 
         if ($bootstrapUsername !== '' && $bootstrapPassword !== '') {
             $adminExists = Admins::where('username', $bootstrapUsername)->exists();
@@ -53,15 +53,6 @@ class LoginController extends Controller
         if (!Schema::hasColumn($tableName, $newColumnName)) {
             Schema::table($tableName, function (Blueprint $table) use ($newColumnName) {
                 $table->string($newColumnName)->after('end_date')->nullable();
-            });
-
-            sleep(1);
-        }
-        $tableName = 'singboxes';
-        $newColumnName = 'sni';
-        if (!Schema::hasColumn($tableName, $newColumnName)) {
-            Schema::table($tableName, function (Blueprint $table) use ($newColumnName) {
-                $table->string($newColumnName)->after('desc')->nullable();
             });
 
             sleep(1);
