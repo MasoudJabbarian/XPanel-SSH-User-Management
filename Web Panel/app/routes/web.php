@@ -89,10 +89,5 @@ Route::prefix('fixer')->middleware('auth:admins')->group(function() {
     Route::get('/exp', [FixerController::class, 'cronexp'])->name('exp');
     Route::get('/multiuser', [FixerController::class, 'multiuser'])->name('multiuser');
     Route::get('/other', [FixerController::class, 'other'])->name('other');
-    Route::get('/checkfilter', [FixerController::class, 'check_filter'])->name('checkfilter');
-    Route::get('/checktraffic', [FixerController::class, 'check_traffic'])->name('checktraffic');
-    Route::get('/checkhurly', [FixerController::class, 'check_hourly'])->name('checkhurly');
-    Route::get('/send/email/3day', [FixerController::class, 'send_email_detail_acc_3day'])->name('send.email.3day');
-    Route::get('/send/email/24h', [FixerController::class, 'send_email_detail_acc'])->name('send.email.24h');
 });
 Auth::routes();
