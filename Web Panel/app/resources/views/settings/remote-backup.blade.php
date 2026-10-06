@@ -37,7 +37,7 @@
             @csrf
             <button class="btn btn-outline-primary" type="submit">بازیابی فایل های سرور بکاپ</button>
           </form>
-          <small class="text-muted">۵ فایل آخر با همان فرمت اصلی (.sql.gz) دریافت می‌شوند و محتوای آنها تغییر نمی‌کند.</small>
+          <small class="text-muted">۵ فایل آخر با همان فرمت اصلی (.sql) دریافت می‌شوند و محتوای آنها تغییر نمی‌کند.</small>
         </div>
         @if($settings->remote_backup_last_status)
           <hr><div><strong>Last status:</strong> {{ $settings->remote_backup_last_status }}</div>
