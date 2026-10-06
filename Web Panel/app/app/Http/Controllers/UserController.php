@@ -295,7 +295,7 @@ websiteaddress, PHP_URL_HOST);
                 fclose($file);
                 Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
             }
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$user->username, \$user->password, (string) \$request->multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $user->username, $user->password, (string) $request->multiuser]);
             DB::commit();
         }
         if (!empty($request->email) && $request->email !== null && env('MAIL_STATUS')== 'on')
@@ -419,7 +419,7 @@ websiteaddress, PHP_URL_HOST);
                     fclose($file);
                     Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                 }
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$user->username, \$user->password, (string) \$request->multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $user->username, $user->password, (string) $request->multiuser]);
                 DB::commit();
 
             }
@@ -441,7 +441,7 @@ websiteaddress, PHP_URL_HOST);
                     fclose($file);
                     Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                 }
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $username, $password, (string) $multiuser]);
             }
         }
         else{
@@ -468,7 +468,7 @@ websiteaddress, PHP_URL_HOST);
                     fclose($file);
                     Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                 }
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $username, $password, (string) $multiuser]);
             }
         }
 
@@ -691,7 +691,7 @@ websiteaddress, PHP_URL_HOST);
                             fclose($file);
                             Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                         }
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $username, $password, (string) $multiuser]);
                     }
                     if($request->action=='deactive') {
                         if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
@@ -773,7 +773,7 @@ websiteaddress, PHP_URL_HOST);
                             fclose($file);
                             Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                         }
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $username, $password, (string) $multiuser]);
                     }
                     if($request->action=='deactive') {
                         if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
@@ -842,7 +842,7 @@ websiteaddress, PHP_URL_HOST);
                     $username=$user[0]->username;
                     $password=$user[0]->password;
                     $multiuser=$user[0]->multiuser;
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $username, $password, (string) $multiuser]);
                     if ($request->re_date == 'yes') {
                         Users::where('username', $username)->update(['start_date' => date("Y-m-d")]);
                     }
@@ -878,7 +878,7 @@ websiteaddress, PHP_URL_HOST);
                     $username=$user[0]->username;
                     $password=$user[0]->password;
                     $multiuser=$user[0]->multiuser;
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $username, $password, (string) $multiuser]);
                     if ($request->re_date == 'yes') {
                         Users::where('username', $username)->update(['start_date' => date("Y-m-d")]);
 
@@ -998,7 +998,7 @@ ired|numeric',
                 $username=$user[0]->username;
                 $password=$user[0]->password;
                 $multiuser=$user[0]->multiuser;
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $username, $password, (string) $multiuser]);
                 if ($request->re_date == 'yes') {
                     Users::where('username', $request->username_re)->update(['start_date' => date("Y-m-d")]);
                 }
@@ -1034,7 +1034,7 @@ ired|numeric',
                 $username=$user[0]->username;
                 $password=$user[0]->password;
                 $multiuser=$user[0]->multiuser;
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $username, $password, (string) $multiuser]);
                 if ($request->re_date == 'yes') {
                     Users::where('username', $request->username_re)->update(['start_date' => date("Y-m-d")]);
 
@@ -1302,7 +1302,7 @@ ed|numeric',
                         'desc' => $request->desc
                     ]);
                 if ($request->activate == "active") {
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$request->username, \$request->password, (string) \$request->multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $request->username, $request->password, (string) $request->multiuser]);
                 } else {
                     Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $request->username]);
                     Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $request->username]);
@@ -1328,7 +1328,7 @@ ed|numeric',
                         'desc' => $request->desc
                     ]);
                 if ($request->activate == "active") {
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$request->username, \$request->password, (string) \$request->multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $request->username, $request->password, (string) $request->multiuser]);
                 } else {
                     Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $request->username]);
                     Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $request->username]);
