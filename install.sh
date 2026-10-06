@@ -339,6 +339,8 @@ EOF
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/layouts/setting_menu.blade.php" -o /var/www/html/app/resources/views/layouts/setting_menu.blade.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/settings/remote-backup.blade.php" -o /var/www/html/app/resources/views/settings/remote-backup.blade.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/routes/web.php" -o /var/www/html/app/routes/web.php
+    cd /var/www/html/app
+    php artisan migrate --force
     wait
     fi
 
