@@ -32,7 +32,8 @@ class BackupRemote extends Command
         ]);
 
         $dumpPath = storage_path('app/remote-backup-' . now()->format('Ymd-His') . '.sql');
-        $archivePath = $dumpPath . '.gz';
+        $localBackupDir = storage_path('app/backup');
+        $localBackupPath = $localBackupDir . '/' . basename($dumpPath);
         $defaultsPath = storage_path('app/.remote-backup-' . bin2hex(random_bytes(8)));
 
         try {
@@ -98,9 +99,12 @@ class BackupRemote extends Command
                 throw new \RuntimeException('Unable to create the database backup file.');
             }
 
-            $gzip = Process::run(['/usr/bin/gzip', '-f', $dumpPath]);
-            if ($gzip->failed() || !is_file($archivePath)) {
-                throw new \RuntimeException(trim($gzip->errorOutput()) ?: 'Unable to compress the database backup.');
+            if (!is_dir($localBackupDir) && !mkdir($localBackupDir, 0755, true) && !is_dir($localBackupDir)) {
+                throw new \RuntimeException('Unable to create the local backup folder.');
+            }
+
+            if (!copy($dumpPath, $localBackupPath)) {
+                throw new \RuntimeException('Unable to save the backup in the local backup list.');
             }
 
             $connection = @ssh2_connect($host, $port);
@@ -127,8 +131,8 @@ class BackupRemote extends Command
                 }
             }
 
-            $remoteFile = $remoteFolder . '/' . basename($archivePath);
-            $source = @fopen($archivePath, 'rb');
+            $remoteFile = $remoteFolder . '/' . basename($dumpPath);
+            $source = @fopen($dumpPath, 'rb');
             $target = @fopen('ssh2.sftp://' . intval($sftp) . $remoteFile, 'wb');
 
             if (!$source || !$target) {
@@ -161,7 +165,6 @@ class BackupRemote extends Command
             return self::FAILURE;
         } finally {
             @unlink($dumpPath);
-            @unlink($archivePath);
             @unlink($defaultsPath);
         }
     }
