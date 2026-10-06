@@ -248,20 +248,19 @@ startINSTALL() {
     sudo apt-get install nginx zip unzip net-tools mariadb-server -y
     sudo apt-get install php php-cli php-mbstring php-dom php-pdo php-mysql -y
     sudo apt-get install npm -y
-    sudo apt install python -y
-    sudo apt install python3 -y
+    sudo apt install python3 python3-venv python3-pip -y
     sudo apt install iftop -y
     sudo apt install apt-transport-https -y
     sudo apt-get install coreutils
     apt install curl -y
     apt install git cmake -y
-    apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl cron -y
-    sudo apt install php8.1-fpm
-    sudo apt install php8.1 php8.1-cli php8.1-common php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl php8.1-simplexml -y
+    apt install php8.3 php8.3-mysql php8.3-xml php8.3-curl cron -y
+    sudo apt install php8.3-fpm
+    sudo apt install php8.3 php8.3-cli php8.3-common php8.3-opcache php8.3-mysql php8.3-mbstring php8.3-zip php8.3-intl php8.3-simplexml -y
     wait
 
     phpv=$(php -v)
-    if [[ $phpv == *"8.1"* ]]; then
+    if [[ $phpv == *"8.3"* ]]; then
 
       apt autoremove -y
       echo "PHP Is Installed :)"
@@ -271,9 +270,9 @@ startINSTALL() {
       apt remove php* -y
       apt remove php -y
       apt autoremove -y
-      apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl cron -y
-      sudo apt install php8.1-fpm
-      sudo apt install php8.1 php8.1-cli php8.1-common  php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl php8.1-simplexml -y
+      apt install php8.3 php8.3-mysql php8.3-xml php8.3-curl cron -y
+      sudo apt install php8.3-fpm
+      sudo apt install php8.3 php8.3-cli php8.3-common  php8.3-opcache php8.3-mysql php8.3-mbstring php8.3-zip php8.3-intl php8.3-simplexml -y
 
     fi
     curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
@@ -326,7 +325,7 @@ EOF
     chmod +x /usr/local/bin/cronx
     sudo wget -4 -O /usr/local/bin/cronxfixed https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronxfixed
     chmod +x /usr/local/bin/cronxfixed
-    sed -i 's@zend_extension = /usr/local/ioncube/ioncube_loader_lin_8.1.so@@' /etc/php/8.1/cli/php.ini
+    sed -i 's@zend_extension = /usr/local/ioncube/ioncube_loader_lin_8.1.so@@' /etc/php/8.3/cli/php.ini
     bash <(curl -Ls https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/ioncube.sh --ipv4)
     wait
     echo 'www-data ALL=(ALL:ALL) NOPASSWD:/usr/local/bin/cronx' | sudo EDITOR='tee -a' visudo &
@@ -465,7 +464,7 @@ server {
     }
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
     }
     location ~ /\.ht {
@@ -514,7 +513,7 @@ server {
 
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
     }
 
@@ -561,7 +560,7 @@ server {
     }
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
         fastcgi_param IONCUBE "/usr/local/ioncube/ioncube_loader_lin_8.1.so";
         fastcgi_param PHP_ADMIN_VALUE "zend_extension=/usr/local/ioncube/ioncube_loader_lin_8.1.so";
@@ -958,9 +957,9 @@ check_install mariadb-server
 check_install php
 check_install npm
 check_install coreutils
-check_install php8.1
-check_install php8.1-mysql
-check_install php8.1-xml
-check_install php8.1-curl
+check_install php8.3
+check_install php8.3-mysql
+check_install php8.3-xml
+check_install php8.3-curl
 check_install cron
 check_install nethogs
