@@ -1,9 +1,9 @@
-#!/usr/bin/python
-import socket, threading, thread, select, signal, sys, time, getopt
+#!/usr/bin/env python3
+import socket, threading, select, signal, sys, time, getopt
 
 # Listen
 LISTENING_ADDR = '0.0.0.0'
-LISTENING_PORT = sys.argv[1]
+LISTENING_PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8880
 
 # Pass
 PASS = ''
@@ -30,7 +30,7 @@ class Server(threading.Thread):
         self.soc.settimeout(2)
         intport = int(self.port)
         self.soc.bind((self.host, intport))
-        self.soc.listen(0)
+        self.soc.listen(128)
         self.running = True
 
         try:
@@ -86,7 +86,7 @@ class ConnectionHandler(threading.Thread):
         self.clientClosed = False
         self.targetClosed = True
         self.client = socClient
-        self.client_buffer = ''
+        self.client_buffer = b''
         self.server = server
         self.log = 'Connection: ' + str(addr)
 
@@ -129,14 +129,14 @@ class ConnectionHandler(threading.Thread):
                 if len(PASS) != 0 and passwd == PASS:
                     self.method_CONNECT(hostPort)
                 elif len(PASS) != 0 and passwd != PASS:
-                    self.client.send('HTTP/1.1 400 WrongPass!\r\n\r\n')
+                    self.client.sendall(b'HTTP/1.1 400 WrongPass!\r\n\r\n')
                 elif hostPort.startswith('127.0.0.1') or hostPort.startswith('localhost'):
                     self.method_CONNECT(hostPort)
                 else:
-                    self.client.send('HTTP/1.1 403 Forbidden!\r\n\r\n')
+                    self.client.sendall(b'HTTP/1.1 403 Forbidden!\r\n\r\n')
             else:
                 print '- No X-Real-Host!'
-                self.client.send('HTTP/1.1 400 NoXRealHost!\r\n\r\n')
+                self.client.sendall(b'HTTP/1.1 400 NoXRealHost!\r\n\r\n')
 
         except Exception as e:
             self.log += ' - error: ' + e.strerror
@@ -170,7 +170,7 @@ class ConnectionHandler(threading.Thread):
             if self.method=='CONNECT':
                 port = 443
             else:
-                port = sys.argv[1]
+                port = LISTENING_PORT
 
         (soc_family, soc_type, proto, _, address) = socket.getaddrinfo(host, port)[0]
 
