@@ -1596,19 +1596,19 @@ class UserController extends Controller
                         'desc' => $request->desc
                     ]);
                 if ($request->activate == "active") {
-                    Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$request->username}");
-                    Process::input($request->password."\n".$request->password."\n")->timeout(120)->run("sudo passwd {$request->username}");
-                    Process::run("sudo xp_user_limit add {$request->username} {$request->multiuser}");
+                    Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $request->username]);
+                    Process::input($request->password."\n".$request->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
+                    Process::run(['sudo', 'xp_user_limit', 'add', $request->username, (string) $request->multiuser]);
                 } else {
-                    Process::run("sudo killall -u {$request->username}");
-                    Process::run("sudo pkill -u {$request->username}");
-                    Process::run("sudo timeout 10 pkill -u {$request->username}");
-                    Process::run("sudo timeout 10 killall -u {$request->username}");
-                    Process::run("sudo userdel -r {$request->username}");
-                    Process::run("sudo xp_user_limit del {$request->username} {$request->multiuser}");
+                    Process::run(['sudo', 'killall', '-u', $request->username]);
+                    Process::run(['sudo', 'pkill', '-u', $request->username]);
+                    Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $request->username]);
+                    Process::run(['sudo', 'timeout', '10', 'killall', '-u', $request->username]);
+                    Process::run(['sudo', 'userdel', '-r', $request->username]);
+                    Process::run(['sudo', 'xp_user_limit', 'del', $request->username, (string) $request->multiuser]);
                 }
                 if ($username[0]->password != $request->password) {
-                    Process::input($request->password."\n".$request->password."\n")->timeout(120)->run("sudo passwd {$request->username}");
+                    Process::input($request->password."\n".$request->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
                 }
             }
         }
@@ -1628,20 +1628,20 @@ class UserController extends Controller
                         'desc' => $request->desc
                     ]);
                 if ($request->activate == "active") {
-                    Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$request->username}");
-                    Process::input($request->password."\n".$request->password."\n")->timeout(120)->run("sudo passwd {$request->username}");
-                    Process::run("sudo xp_user_limit add {$request->username} {$request->multiuser}");
+                    Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $request->username]);
+                    Process::input($request->password."\n".$request->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
+                    Process::run(['sudo', 'xp_user_limit', 'add', $request->username, (string) $request->multiuser]);
                 } else {
-                    Process::run("sudo killall -u {$request->username}");
-                    Process::run("sudo pkill -u {$request->username}");
-                    Process::run("sudo timeout 10 pkill -u {$request->username}");
-                    Process::run("sudo timeout 10 killall -u {$request->username}");
-                    Process::run("sudo userdel -r {$request->username}");
-                    Process::run("sudo xp_user_limit del {$request->username} {$request->multiuser}");
+                    Process::run(['sudo', 'killall', '-u', $request->username]);
+                    Process::run(['sudo', 'pkill', '-u', $request->username]);
+                    Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $request->username]);
+                    Process::run(['sudo', 'timeout', '10', 'killall', '-u', $request->username]);
+                    Process::run(['sudo', 'userdel', '-r', $request->username]);
+                    Process::run(['sudo', 'xp_user_limit', 'del', $request->username, (string) $request->multiuser]);
                 }
                 if ($user->password != $request->password) {
-                    Process::input($request->password."\n".$request->password."\n")->timeout(120)->run("sudo passwd {$request->username}");
-                    Process::run("sudo xp_user_limit add {$request->username} {$request->multiuser}");
+                    Process::input($request->password."\n".$request->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
+                    Process::run(['sudo', 'xp_user_limit', 'add', $request->username, (string) $request->multiuser]);
                 }
             }
         }
