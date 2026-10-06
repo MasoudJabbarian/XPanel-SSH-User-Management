@@ -68,15 +68,14 @@ Route::prefix("$panel")->group(function()
     Route::post('/settings/user',[SettingsController::class,'update_multiuser'])->name('settings.multiuser');
     Route::post('/settings/backup',[SettingsController::class,'import_old'])->name('settings.backup.old');
     Route::post('/settings/backup/new',[SettingsController::class,'upload_backup'])->name('settings.backup.upload');
-    Route::get('/settings/backup/delete/{name}',[SettingsController::class,'delete_backup'])->name('settings.backup.delete');
-    Route::get('/settings/backup/restore/{name}',[SettingsController::class,'restore_backup'])->name('settings.backup.restore');
+    Route::post('/settings/backup/delete/{name}',[SettingsController::class,'delete_backup'])->name('settings.backup.delete');
+    Route::post('/settings/backup/restore/{name}',[SettingsController::class,'restore_backup'])->name('settings.backup.restore');
     Route::post('/settings/backup/make/',[SettingsController::class,'make_backup'])->name('settings.backup.make');
     Route::post('/settings/backup/bot/',[SettingsController::class,'bot_backup_up'])->name('settings.backup.bot.up');
     Route::get('/settings/backup/dl/{name}',[SettingsController::class,'download_backup'])->name('settings.backup.dl');
     Route::post('/settings/api',[SettingsController::class,'insert_api'])->name('settings.api');
     Route::get('/settings/api/renew/{id}',[SettingsController::class,'renew_api'])->name('settings.token.renew');
     Route::get('/settings/api/delete/{id}',[SettingsController::class,'delete_api'])->name('settings.token.delete');
-    Route::post('/settings/block',[SettingsController::class,'block'])->name('settings.block');
     Route::get('/managers',[AdminsController::class,'index'])->name('admins');
     Route::post('/managers',[AdminsController::class,'insert'])->name('admin.new');
     Route::get('/managers/active/{username}',[AdminsController::class,'activeadmin'])->name('admin.active');
