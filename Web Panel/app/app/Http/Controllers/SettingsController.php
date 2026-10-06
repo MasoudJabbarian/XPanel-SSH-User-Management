@@ -837,7 +837,6 @@ echo curl_get_contents("$site");
         $settings->remote_backup_folder = trim((string) $request->input('remote_backup_folder'));
         $settings->remote_backup_username = trim($request->input('remote_backup_username'));
         $settings->remote_backup_port = (int) $request->input('remote_backup_port');
-        $settings->remote_backup_ssl = $request->boolean('remote_backup_ssl');
         $settings->remote_backup_enabled = $request->boolean('remote_backup_enabled');
         $settings->remote_backup_interval_hours = (int) $request->input('remote_backup_interval_hours');
 
