@@ -1,4 +1,5 @@
 #!/bin/bash
+# v3.9.7 clean base
 
 #By setting DEBIAN_FRONTEND to noninteractive, any prompts or interactive dialogs from the package manager will proceed with the installation without user intervention.
 export DEBIAN_FRONTEND=noninteractive
@@ -52,9 +53,10 @@ checkOS() {
     exit 1
   fi
 
-  # This installer supports Ubuntu 22.04 LTS and newer releases.
+  # This script only works on Ubuntu 22.04 and above
   if [ "$(uname)" == "Linux" ]; then
     version_info=$(lsb_release -rs | cut -d '.' -f 1)
+    # Check if it's Ubuntu and version is below 20
     if [ "$(lsb_release -is)" == "Ubuntu" ] && [ "$version_info" -lt 22 ]; then
       echo "This script only works on Ubuntu 22.04 and above"
       exit
@@ -121,9 +123,6 @@ wellcomeINSTALL() {
   echo -e "${GREEN}  10)XPanel v3.7.9"
   echo -ne "${GREEN}\nSelect Version : ${ENDCOLOR}"
   read n < /dev/tty
-  if [ -z "$n" ]; then
-    n="3"
-  fi
   if [ "$n" != "" ]; then
     if [ "$n" == "1" ]; then
       linkd=https://api.github.com/repos/xpanel-cp/XPanel-SSH-User-Management/releases/tags/v4-0
@@ -245,16 +244,8 @@ startINSTALL() {
     sudo apt upgrade -y
     sudo apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
     apt-get install -y stunnel4 && apt-get install -y cmake && apt-get install -y screenfetch && apt-get install -y openssl
-    sudo apt-get -y install software-properties-common ca-certificates lsb-release
-    if [ "${version_info:-22}" -ge 26 ]; then
-      # The PHP packaging moved from the Launchpad PPA to packages.sury.org for Ubuntu 26.04+.
-      curl -fsSL -o /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb
-      dpkg -i /tmp/debsuryorg-archive-keyring.deb
-      echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
-      apt-get update -y
-    else
-      sudo add-apt-repository ppa:ondrej/php -y
-    fi
+    sudo apt-get -y install software-properties-common
+    sudo add-apt-repository ppa:ondrej/php -y
     sudo apt-get install nginx zip unzip net-tools mariadb-server -y
     sudo apt-get install php php-cli php-mbstring php-dom php-pdo php-mysql -y
     sudo apt-get install npm -y
@@ -265,27 +256,27 @@ startINSTALL() {
     sudo apt-get install coreutils
     apt install curl -y
     apt install git cmake -y
-    # Laravel 10 supports PHP 8.1-8.3. Keep PHP 8.1 on Ubuntu 22.04,
-    # and use PHP 8.3 on newer Ubuntu releases where 8.1 is not provided
-    # by the distribution repositories.
-    if [ "${version_info:-$(lsb_release -rs | cut -d '.' -f 1)}" -eq 22 ]; then
-      PHP_TARGET_VERSION="8.1"
-    else
-      PHP_TARGET_VERSION="8.3"
-    fi
-
-    apt-get install -y php${PHP_TARGET_VERSION} php${PHP_TARGET_VERSION}-cli php${PHP_TARGET_VERSION}-common \
-      php${PHP_TARGET_VERSION}-opcache php${PHP_TARGET_VERSION}-mysql php${PHP_TARGET_VERSION}-mbstring \
-      php${PHP_TARGET_VERSION}-zip php${PHP_TARGET_VERSION}-intl php${PHP_TARGET_VERSION}-xml \
-      php${PHP_TARGET_VERSION}-curl php${PHP_TARGET_VERSION}-fpm cron
+    apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl cron -y
+    sudo apt install php8.1-fpm -y
+    sudo apt install php8.1 php8.1-cli php8.1-common php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl -y
     wait
 
     phpv=$(php -v)
-    if [[ "$phpv" != *"${PHP_TARGET_VERSION}"* ]]; then
-      update-alternatives --set php "/usr/bin/php${PHP_TARGET_VERSION}" 2>/dev/null || true
-      phpv=$(php -v)
+    if [[ $phpv == *"8.1"* ]]; then
+
+      apt autoremove -y
+      echo "PHP Is Installed :)"
+    else
+      rm -fr /etc/php/7.4/apache2/conf.d/00-ioncube.ini
+      sudo apt-get purge '^php7.*' -y
+      apt remove php* -y
+      apt remove php -y
+      apt autoremove -y
+      apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl cron -y
+      sudo apt install php8.1-fpm
+      sudo apt install php8.1 php8.1-cli php8.1-common  php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl -y
+
     fi
-    echo "PHP ${PHP_TARGET_VERSION} is installed :)"
     curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
     echo "/bin/false" >>/etc/shells
     echo "/usr/sbin/nologin" >>/etc/shells
@@ -333,40 +324,29 @@ EOF
     sudo unzip -o /var/www/html/update.zip -d /var/www/html/ &
     wait
 
-    # Apply the remote-backup feature from this fork after extracting the selected
-    # upstream release. The rest of the selected release remains unchanged.
-    FORK_RAW="https://raw.githubusercontent.com/MasoudJabbarian/XPanel-SSH-User-Management/master"
+    # Add the automatic remote-backup feature only to XPanel v3.9.7.
+    if [ "$n" == "3" ]; then
+    FEATURE_RAW="https://raw.githubusercontent.com/MasoudJabbarian/XPanel-SSH-User-Management/v3.9.7-fixed"
     sudo mkdir -p "/var/www/html/app/app/Console/Commands" "/var/www/html/app/app/Console" \
       "/var/www/html/app/app/Http/Controllers" "/var/www/html/app/app/Models" \
       "/var/www/html/app/database/migrations" "/var/www/html/app/resources/views/layouts" \
       "/var/www/html/app/resources/views/settings"
-    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/app/Console/Commands/BackupRemote.php" -o /var/www/html/app/app/Console/Commands/BackupRemote.php
-    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/app/Console/Kernel.php" -o /var/www/html/app/app/Console/Kernel.php
-    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/app/Http/Controllers/SettingsController.php" -o /var/www/html/app/app/Http/Controllers/SettingsController.php
-    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/app/Models/Settings.php" -o /var/www/html/app/app/Models/Settings.php
-    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/database/migrations/2026_10_06_000001_add_remote_backup_settings.php" -o /var/www/html/app/database/migrations/2026_10_06_000001_add_remote_backup_settings.php
-    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/resources/views/layouts/setting_menu.blade.php" -o /var/www/html/app/resources/views/layouts/setting_menu.blade.php
-    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/resources/views/settings/remote-backup.blade.php" -o /var/www/html/app/resources/views/settings/remote-backup.blade.php
-    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/routes/web.php" -o /var/www/html/app/routes/web.php
-    sudo chown -R www-data:www-data /var/www/html/app
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Console/Commands/BackupRemote.php" -o /var/www/html/app/app/Console/Commands/BackupRemote.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Console/Kernel.php" -o /var/www/html/app/app/Console/Kernel.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Models/Settings.php" -o /var/www/html/app/app/Models/Settings.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/database/migrations/2026_10_07_000001_add_remote_backup_settings.php" -o /var/www/html/app/database/migrations/2026_10_06_000001_add_remote_backup_settings.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/layouts/setting_menu.blade.php" -o /var/www/html/app/resources/views/layouts/setting_menu.blade.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/settings/remote-backup.blade.php" -o /var/www/html/app/resources/views/settings/remote-backup.blade.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/routes/web.php" -o /var/www/html/app/routes/web.php
+    wait
+    fi
+
     sudo wget -4 -O /usr/local/bin/cronx https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronx
     chmod +x /usr/local/bin/cronx
     sudo wget -4 -O /usr/local/bin/cronxfixed https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronxfixed
     chmod +x /usr/local/bin/cronxfixed
-    # Remove any stale ionCube zend_extension path before the fork's loader script runs.
-sed -i '/^[[:space:]]*zend_extension[[:space:]]*=.*ioncube_loader_lin_/d' "/etc/php/${PHP_TARGET_VERSION}/cli/php.ini"
-sed -i '/^[[:space:]]*zend_extension[[:space:]]*=.*ioncube_loader_lin_/d' "/etc/php/${PHP_TARGET_VERSION}/fpm/php.ini"
-    bash <(curl -Ls https://raw.githubusercontent.com/MasoudJabbarian/XPanel-SSH-User-Management/master/ioncube.sh --ipv4)
+    bash <(curl -Ls https://raw.githubusercontent.com/MasoudJabbarian/XPanel-SSH-User-Management/v3.9.7-fixed/ioncube.sh --ipv4)
     wait
-    mkdir -p "/etc/systemd/system/php${PHP_TARGET_VERSION}-fpm.service.d"
-    cat > "/etc/systemd/system/php${PHP_TARGET_VERSION}-fpm.service.d/override.conf" <<EOF
-[Service]
-ProtectSystem=false
-EOF
-    systemctl daemon-reload
-    systemctl restart "php${PHP_TARGET_VERSION}-fpm"
-    wait
-
     echo 'www-data ALL=(ALL:ALL) NOPASSWD:/usr/local/bin/cronx' | sudo EDITOR='tee -a' visudo &
     wait
     echo 'www-data ALL=(ALL:ALL) NOPASSWD:/usr/local/bin/cronxfixed' | sudo EDITOR='tee -a' visudo &
@@ -503,7 +483,7 @@ server {
     }
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/phpFPM_VERSION-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
     }
     location ~ /\.ht {
@@ -552,7 +532,7 @@ server {
 
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/phpFPM_VERSION-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
     }
 
@@ -599,7 +579,7 @@ server {
     }
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/phpFPM_VERSION-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
     }
     location ~ /\.ht {
@@ -608,22 +588,17 @@ server {
 }
 EOF
     sed -i "s/serverPort/$serverPort/g" /etc/nginx/sites-available/default
+    sed -i '/fastcgi_param[[:space:]]\+IONCUBE/d; /fastcgi_param[[:space:]]\+PHP_ADMIN_VALUE.*zend_extension.*ioncube/d' /etc/nginx/sites-available/default
+    sed -i '/fastcgi_param[[:space:]]\+IONCUBE/d; /fastcgi_param[[:space:]]\+PHP_ADMIN_VALUE.*zend_extension.*ioncube/d' /etc/nginx/sites-available/default
     sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
     echo '#Xpanel' >/var/www/xpanelport
     sudo sed -i -e '$a\'$'\n''Xpanelport '$serverPort /var/www/xpanelport
-    sed -i "s#phpFPM_VERSION-fpm.sock#php${PHP_TARGET_VERSION}-fpm.sock#g" /etc/nginx/sites-available/default
-    sed -i "/fastcgi_param[[:space:]]\+IONCUBE/d; /fastcgi_param[[:space:]]\+PHP_ADMIN_VALUE.*zend_extension.*ioncube/d" /etc/nginx/sites-available/default
-    if grep -q "phpFPM_VERSION" /etc/nginx/sites-available/default; then
-      echo "ERROR: unresolved PHP-FPM socket placeholder in Nginx configuration."
-      exit 1
-    fi
     wait
     ##Restart the webserver server to use new port
     sudo nginx -t
     sudo systemctl start nginx
     sudo systemctl enable nginx
     sudo systemctl reload nginx
-
     # Getting Proxy Template
     sudo wget -q -O /usr/local/bin/wss https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/wss
     sudo chmod +x /usr/local/bin/wss
@@ -700,10 +675,14 @@ END
 }
 
 checkDATABASE() {
-  mysql -e "CREATE DATABASE IF NOT EXISTS XPanel_plus;" || exit 1
-  mysql -e "CREATE USER IF NOT EXISTS '${adminusername}'@'localhost' IDENTIFIED BY '${adminpassword}';" || exit 1
-  mysql -e "ALTER USER '${adminusername}'@'localhost' IDENTIFIED BY '${adminpassword}';" || exit 1
-  mysql -e "GRANT ALL ON *.* TO '${adminusername}'@'localhost';" || exit 1
+  mysql -e "create database XPanel_plus;" &
+  wait
+  mysql -e "CREATE USER '${adminusername}'@'localhost' IDENTIFIED BY '${adminpassword}';" &
+  wait
+  mysql -e "GRANT ALL ON *.* TO '${adminusername}'@'localhost';" &
+  wait
+  mysql -e "ALTER USER '${adminusername}'@'localhost' IDENTIFIED BY '${adminpassword}';" &
+  wait
   sed -i "s/DB_USERNAME=.*/DB_USERNAME=$adminusername/g" /var/www/html/app/.env
   sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$adminpassword/g" /var/www/html/app/.env
   cd /var/www/html/app
@@ -727,11 +706,8 @@ moreCONFIG() {
   sed -i "s/PORT_SSH=.*/PORT_SSH=$port/g" /var/www/html/app/.env
   sed -i "s/PORT_UDPGW=.*/PORT_UDPGW=$udpport/g" /var/www/html/app/.env
   sudo chown -R www-data:www-data /var/www/html/app
-  sudo mkdir -p /var/www/html/app/storage /var/www/html/app/bootstrap/cache
-  sudo chown -R www-data:www-data /var/www/html/app/storage /var/www/html/app/bootstrap/cache
-  sudo chmod -R ug+rwX /var/www/html/app/storage /var/www/html/app/bootstrap/cache
   crontab -r
-  (crontab -l 2>/dev/null; echo "* * * * * cd /var/www/html/app && php artisan schedule:run >> /dev/null 2>&1") | crontab -
+  (crontab -l 2>/dev/null | grep -v "artisan schedule:run"; echo "* * * * * cd /var/www/html/app && php artisan schedule:run >> /dev/null 2>&1") | crontab -
   wait
 
   multiin=$(echo "$protcohttp://${defdomain}:$sshttp/fixer/multiuser")
@@ -756,7 +732,6 @@ ENDOFFILE
   sudo sed -i 's/((/$((/' /var/www/html/kill.sh
   wait
   chmod +x /var/www/html/kill.sh
-  (crontab -l 2>/dev/null | grep -v "artisan schedule:run"; echo "* * * * * cd /var/www/html/app && php artisan schedule:run >> /dev/null 2>&1") | crontab -
 
   othercron=$(echo "$protcohttp://${defdomain}:$sshttp/fixer/other")
   cat >/var/www/html/other.sh <<ENDOFFILE
@@ -953,10 +928,6 @@ ENDOFFILE
   sudo apt-get remove apache2 -y
   sudo apt autoremove -y
   cp /var/www/index.php /var/www/html/example/
-  cd /var/www/html/app
-  php artisan optimize:clear || true
-  chown -R www-data:www-data storage bootstrap/cache
-  chmod -R ug+rwX storage bootstrap/cache
   clear
 }
 endINSTALL() {
@@ -1006,9 +977,9 @@ check_install mariadb-server
 check_install php
 check_install npm
 check_install coreutils
-check_install php${PHP_TARGET_VERSION}
-check_install php${PHP_TARGET_VERSION}-mysql
-check_install php${PHP_TARGET_VERSION}-xml
-check_install php${PHP_TARGET_VERSION}-curl
+check_install php8.1
+check_install php8.1-mysql
+check_install php8.1-xml
+check_install php8.1-curl
 check_install cron
 check_install nethogs
