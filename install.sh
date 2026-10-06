@@ -123,7 +123,6 @@ wellcomeINSTALL() {
   echo -e "${GREEN}  10)XPanel v3.7.9"
   echo -ne "${GREEN}\nSelect Version : ${ENDCOLOR}"
   read n < /dev/tty
-  if [ -z "$n" ]; then n="3"; fi
   if [ "$n" != "" ]; then
     if [ "$n" == "1" ]; then
       linkd=https://api.github.com/repos/xpanel-cp/XPanel-SSH-User-Management/releases/tags/v4-0
@@ -707,11 +706,7 @@ moreCONFIG() {
   sed -i "s/PORT_SSH=.*/PORT_SSH=$port/g" /var/www/html/app/.env
   sed -i "s/PORT_UDPGW=.*/PORT_UDPGW=$udpport/g" /var/www/html/app/.env
   sudo chown -R www-data:www-data /var/www/html/app
-  sudo mkdir -p /var/www/html/app/storage /var/www/html/app/bootstrap/cache
-  sudo chown -R www-data:www-data /var/www/html/app/storage /var/www/html/app/bootstrap/cache
-  sudo chmod -R ug+rwX /var/www/html/app/storage /var/www/html/app/bootstrap/cache
   crontab -r
-  (crontab -l 2>/dev/null | grep -v "artisan schedule:run"; echo "* * * * * cd /var/www/html/app && php artisan schedule:run >> /dev/null 2>&1") | crontab -
   (crontab -l 2>/dev/null | grep -v "artisan schedule:run"; echo "* * * * * cd /var/www/html/app && php artisan schedule:run >> /dev/null 2>&1") | crontab -
   wait
 
