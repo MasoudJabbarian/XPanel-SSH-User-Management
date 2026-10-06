@@ -73,6 +73,9 @@ Route::prefix("$panel")->group(function()
     Route::get('/checkip',[OnlineController::class,'filtering'])->name('filtering');
     Route::get('/settings',[SettingsController::class,'defualt'])->name('setting');
     Route::get('/settings/{name}',[SettingsController::class,'index'])->name('settings');
+    Route::get('/settings/remote-backup',[SettingsController::class,'remote_backup'])->name('settings.remote-backup');
+    Route::post('/settings/remote-backup',[SettingsController::class,'remote_backup_save'])->name('settings.remote-backup.save');
+
     Route::get('/settings/mod/{name}',[SettingsController::class,'mod'])->name('mod');
     Route::get('/settings/lang/{name}',[SettingsController::class,'lang'])->name('lang');
     Route::post('/settings/general',[SettingsController::class,'update_general'])->name('settings.general');
