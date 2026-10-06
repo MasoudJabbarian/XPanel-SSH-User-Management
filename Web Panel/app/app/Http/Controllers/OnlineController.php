@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\DB;
 
 class OnlineController extends Controller
 {
+    private function assertLinuxUsername(string $username): void
+    {
+        if (!preg_match('/^[a-z_][a-z0-9_-]{0,31}$/', $username)) {
+            abort(422, 'Invalid Linux username');
+        }
+    }
     public function __construct() {
         $this->middleware('auth:admins');
 
@@ -28,16 +34,17 @@ class OnlineController extends Controller
         if (!is_numeric($pid)) {
             abort(400, 'Not Valid Username');
         }
-        Process::run("sudo kill -9 {$pid}");
+        Process::run(['sudo', 'kill', '-9', (string) $pid]);
         return redirect()->back()->with('success', 'Killed');
     }
 
     public function kill_user(Request $request,$username)
     {
+        $this->assertLinuxUsername($username);
         if (!is_string($username)) {
             abort(400, 'Not Valid Username');
         }
-        Process::run("sudo killall -u {$username}");
+        Process::run(['sudo', 'killall', '-u', $username]);
         return redirect()->back()->with('success', 'Killed');
     }
     public function index()
