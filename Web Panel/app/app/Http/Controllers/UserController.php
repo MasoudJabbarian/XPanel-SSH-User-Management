@@ -25,6 +25,12 @@ use App\Http\Controllers\ProController;
 
 class UserController extends Controller
 {
+    private function assertLinuxUsername(string $username): void
+    {
+        if (!preg_match('/^[a-z_][a-z0-9_-]{0,31}$/', $username)) {
+            abort(422, 'Invalid Linux username');
+        }
+    }
     public function __construct() {
         $this->middleware('auth:admins');
     }
@@ -238,7 +244,8 @@ class UserController extends Controller
     public function newuser(Request $request)
     {
         $user = Auth::user();
-        if($user->permission!='admin')
+        $this->assertLinuxUsername($user->username);
+        if($user->permission!='admin'
         {
             $count_admin = Admins::where('username',$user->username)->first();
             $check_user = Users::where('customer_user', $user->username)->count();
@@ -251,7 +258,7 @@ class UserController extends Controller
         }
 
         $request->validate([
-            'username'=>'required|string',
+            'username'=>'required|string|regex:/^[a-z_][a-z0-9_-]{0,31}$/',
             'password'=>'required|string',
             'email'=>'nullable|string',
             'mobile'=>'nullable|string',
@@ -325,11 +332,11 @@ class UserController extends Controller
                     fwrite($file, $modifiedContent);
                 }
                 fclose($file);
-                Process::run("sudo service ssh restart");
+                Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
             }
-            Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$user->username}");
-            Process::input($user->password."\n".$user->password."\n")->timeout(120)->run("sudo passwd {$user->username}");
-            Process::run("sudo xp_user_limit add {$user->username} {$request->multiuser}");
+            Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $user->username]);
+            Process::input($user->password."\n".$user->password."\n")->timeout(120)->run(['sudo', 'passwd', $user->username]);
+            Process::run(['sudo', 'xp_user_limit', 'add', $user->username, (string) $request->multiuser]);
             DB::commit();
         }
         if (!empty($request->email) && $request->email !== null && env('MAIL_STATUS')== 'on')
@@ -359,6 +366,7 @@ class UserController extends Controller
     public function bulkuser(Request $request)
     {
         $user_s = Auth::user();
+        $this->assertLinuxUsername($user_s->username);
         $request->validate([
             'count_user' => 'required|numeric',
             'start_user' => 'required|string',
@@ -450,11 +458,11 @@ class UserController extends Controller
                         fwrite($file, $modifiedContent);
                     }
                     fclose($file);
-                    Process::run("sudo service ssh restart");
+                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                 }
-                Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$user->username}");
-                Process::input($user->password."\n".$user->password."\n")->timeout(120)->run("sudo passwd {$user->username}");
-                Process::run("sudo xp_user_limit add {$user->username} {$request->multiuser}");
+                Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $user->username]);
+                Process::input($user->password."\n".$user->password."\n")->timeout(120)->run(['sudo', 'passwd', $user->username]);
+                Process::run(['sudo', 'xp_user_limit', 'add', $user->username, (string) $request->multiuser]);
                 DB::commit();
 
             }
@@ -542,11 +550,11 @@ class UserController extends Controller
                         fwrite($file, $modifiedContent);
                     }
                     fclose($file);
-                    Process::run("sudo service ssh restart");
+                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                 }
-                Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$username}");
-                Process::input($password."\n".$password."\n")->timeout(120)->run("sudo passwd {$username}");
-                Process::run("sudo xp_user_limit add {$username} {$multiuser}");
+                Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
+                Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
+                Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
             }
         }
         else{
@@ -571,11 +579,11 @@ class UserController extends Controller
                         fwrite($file, $modifiedContent);
                     }
                     fclose($file);
-                    Process::run("sudo service ssh restart");
+                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                 }
-                Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$username}");
-                Process::input($password."\n".$password."\n")->timeout(120)->run("sudo passwd {$username}");
-                Process::run("sudo xp_user_limit add {$username} {$multiuser}");
+                Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
+                Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
+                Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
             }
         }
 
@@ -635,17 +643,17 @@ class UserController extends Controller
                     }
                     file_put_contents($filename, implode('', $newFileContent));
 
-                    Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
-                    Process::run("sudo service ssh restart");
+                    Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
+                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
 
                 }
                 Users::where('username', $username)->update(['status' => 'deactive']);
-                Process::run("sudo killall -u {$username}");
-                Process::run("sudo pkill -u {$username}");
-                Process::run("sudo timeout 10 pkill -u {$username}");
-                Process::run("sudo timeout 10 killall -u {$username}");
-                Process::run("sudo userdel -r {$username}");
-                Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+                Process::run(['sudo', 'killall', '-u', $username]);
+                Process::run(['sudo', 'pkill', '-u', $username]);
+                Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
+                Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
+                Process::run(['sudo', 'userdel', '-r', $username]);
+                Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
             }
         }
         else{
@@ -662,16 +670,16 @@ class UserController extends Controller
                         }
                     }
                     file_put_contents($filename, implode('', $newFileContent));
-                    Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
-                    Process::run("sudo service ssh restart");
+                    Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
+                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                 }
                 Users::where('username', $username)->update(['status' => 'deactive']);
-                Process::run("sudo killall -u {$username}");
-                Process::run("sudo pkill -u {$username}");
-                Process::run("sudo timeout 10 pkill -u {$username}");
-                Process::run("sudo timeout 10 killall -u {$username}");
-                Process::run("sudo userdel -r {$username}");
-                Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+                Process::run(['sudo', 'killall', '-u', $username]);
+                Process::run(['sudo', 'pkill', '-u', $username]);
+                Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
+                Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
+                Process::run(['sudo', 'userdel', '-r', $username]);
+                Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
             }
         }
         return redirect()->back()->with('success', 'Deactivated');
@@ -709,7 +717,7 @@ class UserController extends Controller
             if ($check_user > 0) {
                 Traffic::where('username', $username)->update(['download' => '0', 'upload' => '0', 'total' => '0']);
                 if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
-                    Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
+                    Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
                 }
             }
         }
@@ -720,7 +728,7 @@ class UserController extends Controller
                 Traffic::where('username', $username)->update(['download' => '0', 'upload' => '0', 'total' => '0']);
 
                 if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
-                    Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
+                    Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
                 }
             }
         }
@@ -797,26 +805,26 @@ class UserController extends Controller
                         }
                     }
                     file_put_contents($filename, implode('', $newFileContent));
-                    Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
-                    Process::run("sudo service ssh restart");
+                    Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
+                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                 }
                 if($status_user[0]->status=='active') {
-                    Process::run("sudo killall -u {$username}");
-                    Process::run("sudo pkill -u {$username}");
-                    Process::run("sudo timeout 10 pkill -u {$username}");
-                    Process::run("sudo timeout 10 killall -u {$username}");
-                    $userdelProcess = Process::run("sudo userdel -r {$username}");
+                    Process::run(['sudo', 'killall', '-u', $username]);
+                    Process::run(['sudo', 'pkill', '-u', $username]);
+                    Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
+                    Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
+                    $userdelProcess = Process::run(['sudo', 'userdel', '-r', $username]);
                     if ($userdelProcess->successful()) {
                         Users::where('username', $username)->delete();
                         Traffic::where('username', $username)->delete();
-                        Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+                        Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
                     }
                 }
                 else
                 {
                     Users::where('username', $username)->delete();
                     Traffic::where('username', $username)->delete();
-                    Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+                    Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
                 }
             }
         }
@@ -835,26 +843,26 @@ class UserController extends Controller
                         }
                     }
                     file_put_contents($filename, implode('', $newFileContent));
-                    Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
-                    Process::run("sudo service ssh restart");
+                    Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
+                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                 }
                 if ($status_user[0]->status == 'active') {
-                    Process::run("sudo killall -u {$username}");
-                    Process::run("sudo pkill -u {$username}");
-                    Process::run("sudo timeout 10 pkill -u {$username}");
-                    Process::run("sudo timeout 10 killall -u {$username}");
-                    $userdelProcess = Process::run("sudo userdel -r {$username}");
+                    Process::run(['sudo', 'killall', '-u', $username]);
+                    Process::run(['sudo', 'pkill', '-u', $username]);
+                    Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
+                    Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
+                    $userdelProcess = Process::run(['sudo', 'userdel', '-r', $username]);
                     if ($userdelProcess->successful()) {
                         Users::where('username', $username)->delete();
                         Traffic::where('username', $username)->delete();
-                        Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+                        Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
                     }
                 }
                 else
                 {
                     Users::where('username', $username)->delete();
                     Traffic::where('username', $username)->delete();
-                    Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+                    Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
                 }
             }
         }
@@ -882,23 +890,23 @@ class UserController extends Controller
                                 }
                             }
                             file_put_contents($filename, implode('', $newFileContent));
-                            Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
+                            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
                         }
                         if ($status_user[0]->status == 'active') {
-                            Process::run("sudo killall -u {$username}");
-                            Process::run("sudo pkill -u {$username}");
-                            Process::run("sudo timeout 10 pkill -u {$username}");
-                            Process::run("sudo timeout 10 killall -u {$username}");
-                            $userdelProcess = Process::run("sudo userdel -r {$username}");
+                            Process::run(['sudo', 'killall', '-u', $username]);
+                            Process::run(['sudo', 'pkill', '-u', $username]);
+                            Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
+                            Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
+                            $userdelProcess = Process::run(['sudo', 'userdel', '-r', $username]);
                             if ($userdelProcess->successful()) {
                                 Users::where('username', $username)->delete();
                                 Traffic::where('username', $username)->delete();
-                                Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+                                Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
                             }
                         } else {
                             Users::where('username', $username)->delete();
                             Traffic::where('username', $username)->delete();
-                            Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+                            Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
                         }
                     }
                     if($request->action=='active') {
@@ -922,11 +930,11 @@ class UserController extends Controller
                                 fwrite($file, $modifiedContent);
                             }
                             fclose($file);
-                            Process::run("sudo service ssh restart");
+                            Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                         }
-                        Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$username}");
-                        Process::input($password."\n".$password."\n")->timeout(120)->run("sudo passwd {$username}");
-                        Process::run("sudo xp_user_limit add {$username} {$multiuser}");
+                        Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
+                        Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
+                        Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
                     }
                     if($request->action=='deactive') {
                         if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
@@ -941,21 +949,21 @@ class UserController extends Controller
                             }
                             file_put_contents($filename, implode('', $newFileContent));
 
-                            Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
-                            Process::run("sudo service ssh restart");
+                            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
+                            Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                         }
                         Users::where('username', $username)->update(['status' => 'deactive']);
-                        Process::run("sudo killall -u {$username}");
-                        Process::run("sudo pkill -u {$username}");
-                        Process::run("sudo timeout 10 pkill -u {$username}");
-                        Process::run("sudo timeout 10 killall -u {$username}");
-                        Process::run("sudo userdel -r {$username}");
-                        Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+                        Process::run(['sudo', 'killall', '-u', $username]);
+                        Process::run(['sudo', 'pkill', '-u', $username]);
+                        Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
+                        Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
+                        Process::run(['sudo', 'userdel', '-r', $username]);
+                        Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
                     }
                     if($request->action=='retraffic') {
                         Traffic::where('username', $username)->update(['download' => '0', 'upload' => '0', 'total' => '0']);
                         if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
-                            Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
+                            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
                         }
                     }
                 }
@@ -978,23 +986,23 @@ class UserController extends Controller
                                 }
                             }
                             file_put_contents($filename, implode('', $newFileContent));
-                            Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
+                            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
                         }
                         if ($status_user[0]->status == 'active') {
-                            Process::run("sudo killall -u {$username}");
-                            Process::run("sudo pkill -u {$username}");
-                            Process::run("sudo timeout 10 pkill -u {$username}");
-                            Process::run("sudo timeout 10 killall -u {$username}");
-                            $userdelProcess = Process::run("sudo userdel -r {$username}");
+                            Process::run(['sudo', 'killall', '-u', $username]);
+                            Process::run(['sudo', 'pkill', '-u', $username]);
+                            Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
+                            Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
+                            $userdelProcess = Process::run(['sudo', 'userdel', '-r', $username]);
                             if ($userdelProcess->successful()) {
                                 Users::where('username', $username)->delete();
                                 Traffic::where('username', $username)->delete();
-                                Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+                                Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
                             }
                         } else {
                             Users::where('username', $username)->delete();
                             Traffic::where('username', $username)->delete();
-                            Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+                            Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
                         }
                     }
                     if($request->action=='active') {
@@ -1018,11 +1026,11 @@ class UserController extends Controller
                                 fwrite($file, $modifiedContent);
                             }
                             fclose($file);
-                            Process::run("sudo service ssh restart");
+                            Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                         }
-                        Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$username}");
-                        Process::input($password."\n".$password."\n")->timeout(120)->run("sudo passwd {$username}");
-                        Process::run("sudo xp_user_limit add {$username} {$multiuser}");
+                        Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
+                        Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
+                        Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
                     }
                     if($request->action=='deactive') {
                         if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
@@ -1037,27 +1045,27 @@ class UserController extends Controller
                             }
                             file_put_contents($filename, implode('', $newFileContent));
 
-                            Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
-                            Process::run("sudo service ssh restart");
+                            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
+                            Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                         }
                         Users::where('username', $username)->update(['status' => 'deactive']);
-                        Process::run("sudo killall -u {$username}");
-                        Process::run("sudo pkill -u {$username}");
-                        Process::run("sudo timeout 10 pkill -u {$username}");
-                        Process::run("sudo timeout 10 killall -u {$username}");
-                        Process::run("sudo userdel -r {$username}");
-                        Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+                        Process::run(['sudo', 'killall', '-u', $username]);
+                        Process::run(['sudo', 'pkill', '-u', $username]);
+                        Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
+                        Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
+                        Process::run(['sudo', 'userdel', '-r', $username]);
+                        Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
                     }
                     if($request->action=='retraffic') {
                         Traffic::where('username', $username)->update(['download' => '0', 'upload' => '0', 'total' => '0']);
                         if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
-                            Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
+                            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
                         }
                     }
                 }
             }
         }
-        Process::run("sudo service ssh restart");
+        Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
         return redirect()->back()->with('success', 'Deleted');
     }
     public function renew_bulk(Request $request)
@@ -1089,7 +1097,7 @@ class UserController extends Controller
                             fwrite($file, $modifiedContent);
                         }
                         fclose($file);
-                        Process::run("sudo service ssh restart");
+                        Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                     }
                     Users::where('username', $username)->update(['status' => 'active', 'end_date' => $newdate]);
 
@@ -1097,9 +1105,9 @@ class UserController extends Controller
                     $username=$user[0]->username;
                     $password=$user[0]->password;
                     $multiuser=$user[0]->multiuser;
-                    Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$username}");
-                    Process::input($password."\n".$password."\n")->timeout(120)->run("sudo passwd {$username}");
-                    Process::run("sudo xp_user_limit add {$username} {$multiuser}");
+                    Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
+                    Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
+                    Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
                     if ($request->re_date == 'yes') {
                         Users::where('username', $username)->update(['start_date' => date("Y-m-d")]);
                     }
@@ -1127,7 +1135,7 @@ class UserController extends Controller
                             fwrite($file, $modifiedContent);
                         }
                         fclose($file);
-                        Process::run("sudo service ssh restart");
+                        Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                     }
                     Users::where('username', $username)->update(['status' => 'active', 'end_date' => $newdate]);
 
@@ -1135,9 +1143,9 @@ class UserController extends Controller
                     $username=$user[0]->username;
                     $password=$user[0]->password;
                     $multiuser=$user[0]->multiuser;
-                    Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$username}");
-                    Process::input($password."\n".$password."\n")->timeout(120)->run("sudo passwd {$username}");
-                    Process::run("sudo xp_user_limit add {$username} {$multiuser}");
+                    Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
+                    Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
+                    Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
                     if ($request->re_date == 'yes') {
                         Users::where('username', $username)->update(['start_date' => date("Y-m-d")]);
 
@@ -1149,7 +1157,7 @@ class UserController extends Controller
                 }
             }
         }
-        Process::run("sudo service ssh restart");
+        Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
         return redirect()->back()->with('success', 'Deleted');
     }
     public function renewal_sb(Request $request)
@@ -1253,7 +1261,7 @@ class UserController extends Controller
                         fwrite($file, $modifiedContent);
                     }
                     fclose($file);
-                    Process::run("sudo service ssh restart");
+                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                 }
                 Users::where('username', $request->username_re)->update(['status' => 'active', 'end_date' => $newdate]);
 
@@ -1261,9 +1269,9 @@ class UserController extends Controller
                 $username=$user[0]->username;
                 $password=$user[0]->password;
                 $multiuser=$user[0]->multiuser;
-                Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$username}");
-                Process::input($password."\n".$password."\n")->timeout(120)->run("sudo passwd {$username}");
-                Process::run("sudo xp_user_limit add {$username} {$multiuser}");
+                Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
+                Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
+                Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
                 if ($request->re_date == 'yes') {
                     Users::where('username', $request->username_re)->update(['start_date' => date("Y-m-d")]);
                 }
@@ -1291,7 +1299,7 @@ class UserController extends Controller
                         fwrite($file, $modifiedContent);
                     }
                     fclose($file);
-                    Process::run("sudo service ssh restart");
+                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
                 }
                 Users::where('username', $request->username_re)->update(['status' => 'active', 'end_date' => $newdate]);
 
@@ -1299,9 +1307,9 @@ class UserController extends Controller
                 $username=$user[0]->username;
                 $password=$user[0]->password;
                 $multiuser=$user[0]->multiuser;
-                Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$username}");
-                Process::input($password."\n".$password."\n")->timeout(120)->run("sudo passwd {$username}");
-                Process::run("sudo xp_user_limit add {$username} {$multiuser}");
+                Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
+                Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
+                Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
                 if ($request->re_date == 'yes') {
                     Users::where('username', $request->username_re)->update(['start_date' => date("Y-m-d")]);
 
@@ -1657,15 +1665,15 @@ class UserController extends Controller
                     }
                 }
                 file_put_contents($filename, implode('', $newFileContent));
-                Process::run("sudo rm -rf /var/www/html/app/storage/banner/{$username}-detail");
-                Process::run("sudo service ssh restart");
+                Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
+                Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
             }
-            Process::run("sudo killall -u {$username}");
-            Process::run("sudo pkill -u {$username}");
-            Process::run("sudo timeout 10 pkill -u {$username}");
-            Process::run("sudo timeout 10 killall -u {$username}");
-            Process::run("sudo userdel -r {$username}");
-            Process::run("sudo xp_user_limit del {$username} {$multiuser}");
+            Process::run(['sudo', 'killall', '-u', $username]);
+            Process::run(['sudo', 'pkill', '-u', $username]);
+            Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
+            Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
+            Process::run(['sudo', 'userdel', '-r', $username]);
+            Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
         }
         DB::table('users')->truncate();
         DB::table('traffic')->truncate();
@@ -1703,7 +1711,7 @@ class UserController extends Controller
             $process2->setTimeout(120);
             $process2->start();
             $processes[] = $process2;
-            Process::run("sudo xp_user_limit add {$username} {$multiuser}");
+            Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
         }
 
         foreach ($processes as $process) {
