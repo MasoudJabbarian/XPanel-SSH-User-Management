@@ -192,7 +192,6 @@
                 </li>
 
                 <li class="dropdown pc-h-item">
-                    <a class="pc-head-link dropdown-toggle arrow-none me-0" href="{{route('server.reboot')}}">
                         <i class="ti ti-refresh-alert"></i>
                     </a>
                 </li>
