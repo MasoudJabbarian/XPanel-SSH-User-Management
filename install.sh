@@ -325,7 +325,7 @@ EOF
     chmod +x /usr/local/bin/cronx
     sudo wget -4 -O /usr/local/bin/cronxfixed https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronxfixed
     chmod +x /usr/local/bin/cronxfixed
-    sed -i 's@zend_extension = /usr/local/ioncube/ioncube_loader_lin_8.1.so@@' /etc/php/8.1/cli/php.ini
+    sed -i 's@zend_extension = /usr/local/ioncube/ioncube_loader_lin_PHP_TARGET_VERSION.so@@' /etc/php/8.1/cli/php.ini
     bash <(curl -Ls https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/ioncube.sh --ipv4)
     wait
     echo 'www-data ALL=(ALL:ALL) NOPASSWD:/usr/local/bin/cronx' | sudo EDITOR='tee -a' visudo &
@@ -513,7 +513,7 @@ server {
 
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_pass unix:/var/run/php/phpFPM_VERSION-fpm.sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
     }
 
@@ -560,10 +560,10 @@ server {
     }
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_pass unix:/var/run/php/phpFPM_VERSION-fpm.sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
-        fastcgi_param IONCUBE "/usr/local/ioncube/ioncube_loader_lin_8.1.so";
-        fastcgi_param PHP_ADMIN_VALUE "zend_extension=/usr/local/ioncube/ioncube_loader_lin_8.1.so";
+        fastcgi_param IONCUBE "/usr/local/ioncube/ioncube_loader_lin_PHP_TARGET_VERSION.so";
+        fastcgi_param PHP_ADMIN_VALUE "zend_extension=/usr/local/ioncube/ioncube_loader_lin_PHP_TARGET_VERSION.so";
     }
     location ~ /\.ht {
         deny all;
@@ -582,6 +582,10 @@ EOF
     sudo systemctl reload nginx
     # Use the installed PHP-FPM socket on Ubuntu 22.04+.
     sed -i "s/phpFPM_VERSION-fpm.sock/php${PHP_TARGET_VERSION}-fpm.sock/g" /etc/nginx/sites-available/default
+
+    # Resolve version-specific PHP paths in the generated Nginx configuration.
+    sed -i "s/phpFPM_VERSION-fpm.sock/php${PHP_TARGET_VERSION}-fpm.sock/g" /etc/nginx/sites-available/default
+    sed -i "s/ioncube_loader_lin_PHP_TARGET_VERSION.so/ioncube_loader_lin_${PHP_TARGET_VERSION}.so/g" /etc/nginx/sites-available/default
 
     # Getting Proxy Template
     sudo wget -q -O /usr/local/bin/wss https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/wss
@@ -960,9 +964,9 @@ check_install mariadb-server
 check_install php
 check_install npm
 check_install coreutils
-check_install php8.1
-check_install php8.1-mysql
-check_install php8.1-xml
-check_install php8.1-curl
+check_install php${PHP_TARGET_VERSION}
+check_install php${PHP_TARGET_VERSION}-mysql
+check_install php${PHP_TARGET_VERSION}-xml
+check_install php${PHP_TARGET_VERSION}-curl
 check_install cron
 check_install nethogs
