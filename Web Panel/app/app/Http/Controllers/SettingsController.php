@@ -811,4 +811,47 @@ echo curl_get_contents("$site");
 
 
 
+    public function remote_backup()
+    {
+        $this->check();
+        $settings = Settings::firstOrFail();
+        return view('settings.remote-backup', compact('settings'));
+    }
+
+    public function remote_backup_save(Request $request)
+    {
+        $this->check();
+
+        $request->validate([
+            'remote_backup_host' => 'required|string|max:255',
+            'remote_backup_folder' => 'nullable|string|max:500',
+            'remote_backup_username' => 'required|string|max:255',
+            'remote_backup_password' => 'nullable|string|max:1000',
+            'remote_backup_port' => 'required|integer|min:1|max:65535',
+            'remote_backup_interval_hours' => 'required|integer|min:1|max:8760',
+        ]);
+
+        $settings = Settings::firstOrFail();
+
+        $settings->remote_backup_host = trim($request->input('remote_backup_host'));
+        $settings->remote_backup_folder = trim((string) $request->input('remote_backup_folder'));
+        $settings->remote_backup_username = trim($request->input('remote_backup_username'));
+        $settings->remote_backup_port = (int) $request->input('remote_backup_port');
+        $settings->remote_backup_ssl = $request->boolean('remote_backup_ssl');
+        $settings->remote_backup_enabled = $request->boolean('remote_backup_enabled');
+        $settings->remote_backup_interval_hours = (int) $request->input('remote_backup_interval_hours');
+
+        if ($request->filled('remote_backup_password')) {
+            $settings->remote_backup_password = $request->input('remote_backup_password');
+        }
+
+        $settings->remote_backup_last_at = null;
+        $settings->remote_backup_last_status = null;
+        $settings->remote_backup_last_message = null;
+        $settings->save();
+
+        return redirect()->route('settings.remote-backup')->with('success', 'Remote backup settings saved.');
+    }
+
+
 }
