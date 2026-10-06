@@ -367,16 +367,6 @@ EOF
     systemctl restart "php${PHP_TARGET_VERSION}-fpm"
     wait
 
-    # Keep the PHP-FPM service compatible with ionCube/XPanel on Ubuntu 22.04+.
-    # This replaces the manual ProtectSystem=false step that was previously required.
-    mkdir -p "/etc/systemd/system/php${PHP_TARGET_VERSION}-fpm.service.d"
-    cat > "/etc/systemd/system/php${PHP_TARGET_VERSION}-fpm.service.d/override.conf" <<EOF
-[Service]
-ProtectSystem=false
-EOF
-    systemctl daemon-reload
-    systemctl restart "php${PHP_TARGET_VERSION}-fpm"
-    wait
     echo 'www-data ALL=(ALL:ALL) NOPASSWD:/usr/local/bin/cronx' | sudo EDITOR='tee -a' visudo &
     wait
     echo 'www-data ALL=(ALL:ALL) NOPASSWD:/usr/local/bin/cronxfixed' | sudo EDITOR='tee -a' visudo &
