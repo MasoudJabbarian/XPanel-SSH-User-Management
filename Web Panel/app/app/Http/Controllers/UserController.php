@@ -6,10 +6,7 @@ use App\Models\Admins;
 use App\Models\Settings;
 use App\Models\Traffic;
 use App\Models\Users;
-use App\Models\Singbox;
-use App\Models\Trafficsb;
 use App\Models\LogConnection;
-use App\Models\Xguard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +15,6 @@ use Illuminate\Support\Str;
 use Verta;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Yajra\DataTables\Facades\DataTables;
-use App\Http\Controllers\ProController;
 
 
 
@@ -39,20 +35,7 @@ class UserController extends Controller
         $data=base64_decode($data);
         return response(QrCode::size(300)->margin(5)->generate($data));
     }
-    public function singbox_generateQRCode(Request $request)
-    {
-        $data = $request->input('base64Data');
-        $data=base64_decode($data);
-        return response(QrCode::size(300)->margin(5)->generate($data));
-    }
-    public function search_sb(Request $request)
-    {
-
-
-        $keyword = $request->input('keyword');
-        $searchBy = $request->input('search_by');
-        $status = $request->input('status');
-        $protocol = $request->input('protocol');
+->input('protocol');
         $user = Auth::user();
         $query = Singbox::orderBy('id', 'desc');
 
@@ -109,29 +92,12 @@ class UserController extends Controller
 
         $users = $query->paginate(25);
 
-        $xguard = Xguard::all();
-        if(env('XGUARD')=='active' AND !empty($xguard[0]->domain))
-        {
-            $xguard_status='active';
-            $sshaddress=$xguard[0]->domain;
-            $port_ssh=$xguard[0]->port;
-            $websiteaddress = $_SERVER['HTTP_HOST'];
-            $websiteaddress = parse_url($websiteaddress, PHP_URL_HOST);
-        }
-        else {
-            $xguard_status='deactive';
-            $websiteaddress = $_SERVER['HTTP_HOST'];
-            $sshaddress = parse_url($websiteaddress, PHP_URL_HOST);
-            $websiteaddress = parse_url($websiteaddress, PHP_URL_HOST);
-
-            $port_ssh=env('PORT_SSH');
-        }
-
-        $user = Auth::user();
+        $websiteaddress = parse_url($_SERVER['HTTP_HOST'], PHP_URL_HOST);
+        $sshaddress = $websiteaddress;
+        $port_ssh = env('PORT_SSH');
         $password_auto = Str::random(8);
-
         $settings = Settings::all();
-        return view('users.home', compact('users', 'settings','password_auto','websiteaddress','port_ssh','sshaddress','xguard_status'));
+        return view('users.home', compact('users', 'settings','password_auto','websiteaddress','port_ssh','sshaddress'));
     }
     public function index_sort($status)
     {
@@ -162,10 +128,7 @@ class UserController extends Controller
         $settings = Settings::all();
         return view('users.home', compact('users', 'settings','password_auto','websiteaddress','port_ssh','sshaddress','xguard_status'));
     }
-    public function sb_index()
-    {
-        $websiteaddress = $_SERVER['HTTP_HOST'];
-        $address = parse_url($websiteaddress, PHP_URL_HOST);
+websiteaddress, PHP_URL_HOST);
         $user = Auth::user();
         $password_auto = Str::random(8);
         $detail_admin = Admins::where('username',$user->username)->first();
@@ -211,9 +174,7 @@ class UserController extends Controller
         $password_auto = Str::random(8);
         return view('users.create', compact('password_auto'));
     }
-    public function sb_newuser(Request $request)
-    {
-        $validatedData = $request->validate([
+([
             'name'=>'required|string',
             'protocol'=>'required|string',
             'email'=>'nullable|string',
@@ -469,75 +430,7 @@ class UserController extends Controller
         }
         return redirect()->intended(route('users'));
     }
-    public function activeuser_sb(Request $request,$port)
-    {
-        if (!is_numeric($port)) {
-            abort(400, 'Not Valid Username');
-        }
-        $user = Auth::user();
-        if($user->permission=='admin')
-        {
-            $check_user = Singbox::where('port_sb',$port)->count();
-            if ($check_user > 0) {
-                $user = Singbox::where('port_sb',$port)->first();
-                $jsonData = json_decode($user->detail_sb, true);
-                $sid=$jsonData['sid'];
-                $uuid=$jsonData['uuid'];
-                $protocol=$user->protocol_sb;
-                $name=$user->name;
-                $multiuser=$user->multiuser;
-                $validatedData = [
-                    'port'=>$port,
-                    'protocol'=>$protocol,
-                    'sid'=>$sid,
-                    'uuid'=>$uuid,
-                    'name'=>$name,
-                    'multiuser'=>$multiuser
-                ];
-
-                ProController::active_singbox($validatedData);
-            }
-        }
-        else{
-            $check_user = Singbox::where('port_sb', $port)->where('customer_user', $user->username)->count();
-            if ($check_user > 0) {
-                $user = Singbox::where('port_sb',$port)->first();
-                $jsonData = json_decode($user->detail_sb, true);
-                $sid=$jsonData['sid'];
-                $uuid=$jsonData['uuid'];
-                $protocol=$user->protocol_sb;
-                $name=$user->name;
-                $validatedData = [
-                    'port'=>$port,
-                    'protocol'=>$protocol,
-                    'sid'=>$sid,
-                    'uuid'=>$uuid,
-                    'name'=>$name
-                ];
-
-                ProController::active_singbox($validatedData);
-            }
-        }
-
-        return redirect()->back()->with('success', 'Activated');
-    }
-    public function activeuser(Request $request,$username)
-    {
-        if (!is_string($username)) {
-            abort(400, 'Not Valid Username');
-        }
-        $user = Auth::user();
-        if($user->permission=='admin')
-        {
-            $check_user = Users::where('username',$username)->count();
-            if ($check_user > 0) {
-                Users::where('username', $username)->update(['status' => 'active']);
-
-                $user = Users::where('username',$username)->get();
-                $password=$user[0]->password;
-                $multiuser=$user[0]->multiuser;
-                if (env('STATUS_LOG', 'deactive') == 'active') {
-                    $replacement = "Match User {$username}\nBanner /var/www/html/app/storage/banner/{$username}-detail\nMatch all";
+        $replacement = "Match User {$username}\nBanner /var/www/html/app/storage/banner/{$username}-detail\nMatch all";
                     $file = fopen("/etc/ssh/sshd_config", "r+");
                     $fileContent = fread($file, filesize("/etc/ssh/sshd_config"));
                     if (strpos($fileContent, "#Match all") !== false) {
@@ -589,17 +482,7 @@ class UserController extends Controller
 
         return redirect()->back()->with('success', 'Activated');
     }
-    public function deactiveuser_sb(Request $request,$port)
-    {
-        if (!is_numeric($port)) {
-            abort(400, 'Not Valid Username');
-        }
-        $user = Auth::user();
-        $activeUserCount = Users::where('status', 'active')->count();
-        if($user->permission=='admin') {
-            $check_user = Singbox::where('port_sb',$port)->count();
-            if ($check_user > 0) {
-                $validatedData = [
+[
                     'port'=>$port
                 ];
 
@@ -685,95 +568,7 @@ class UserController extends Controller
         return redirect()->back()->with('success', 'Deactivated');
 
     }
-    public function reset_traffic_sb(Request $request,$port)
-    {
-        if (!is_numeric($port)) {
-            abort(400, 'Not Valid Username');
-        }
-        $user = Auth::user();
-        if($user->permission=='admin') {
-            $check_user = Singbox::where('port_sb',$port)->count();
-            if ($check_user > 0) {
-                Trafficsb::where('port_sb', $port)->update(['sent_sb' => '0', 'received_sb' => '0', 'total_sb' => '0']);
-            }
-        }
-        else
-        {
-            $check_user = Singbox::where('port_sb', $port)->where('customer_user', $user->username)->count();
-            if ($check_user > 0) {
-                Trafficsb::where('port_sb', $port)->update(['sent_sb' => '0', 'received_sb' => '0', 'total_sb' => '0']);
-            }
-        }
-        return redirect()->back()->with('success', 'Reset Traffic');
-    }
-    public function reset_traffic(Request $request,$username)
-    {
-        if (!is_string($username)) {
-            abort(400, 'Not Valid Username');
-        }
-        $user = Auth::user();
-        if($user->permission=='admin') {
-            $check_user = Users::where('username',$username)->count();
-            if ($check_user > 0) {
-                Traffic::where('username', $username)->update(['download' => '0', 'upload' => '0', 'total' => '0']);
-                if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
-                    Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                }
-            }
-        }
-        else
-        {
-            $check_user = Users::where('username', $username)->where('customer_user', $user->username)->count();
-            if ($check_user > 0) {
-                Traffic::where('username', $username)->update(['download' => '0', 'upload' => '0', 'total' => '0']);
-
-                if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
-                    Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                }
-            }
-        }
-        return redirect()->back()->with('success', 'Reset Traffic');
-    }
-    public function delete_sb(Request $request,$port)
-    {
-        if (!is_numeric($port)) {
-            abort(400, 'Not Valid Username');
-        }
-        $user = Auth::user();
-        $activeUserCount = Users::where('status', 'active')->count();
-        if($user->permission=='admin')
-        {
-            $check_user = Singbox::where('port_sb',$port)->count();
-            $status_user = Singbox::where('port_sb',$port)->get();
-            if ($check_user > 0) {
-                if($status_user[0]->status=='active') {
-                    $validatedData = [
-                        'port'=>$port
-                    ];
-
-                    ProController::delete_singbox($validatedData);
-                }
-                else
-                {
-                    Singbox::where('port_sb', $port)->delete();
-                    Trafficsb::where('port_sb', $port)->delete();
-                }
-            }
-        }
-        else {
-            $check_user = Singbox::where('port_sb', $port)->where('customer_user', $user->username)->count();
-            $status_user = Singbox::where('port_sb',$port)->get();
-            if ($check_user > 0) {
-                if($status_user[0]->status=='active') {
-                    $validatedData = [
-                        'port'=>$port
-                    ];
-
-                    ProController::delete_singbox($validatedData);
-                }
-                else
-                {
-                    Singbox::where('port_sb', $port)->delete();
+)->delete();
                     Trafficsb::where('port_sb', $port)->delete();
                 }
             }
@@ -1160,11 +955,7 @@ class UserController extends Controller
         Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
         return redirect()->back()->with('success', 'Deleted');
     }
-    public function renewal_sb(Request $request)
-    {
-        $request->validate([
-            'username_re' => 'required|string',
-            'day_date' => 'required|numeric',
+ired|numeric',
             're_date' => 'required|string',
             're_traffic' => 'required|string'
         ]);
@@ -1323,20 +1114,7 @@ class UserController extends Controller
 
         return redirect()->back()->with('success', 'Renewal Success');
     }
-    public function edit_sb(Request $request,$port)
-    {
-        if (!is_numeric($port)) {
-            abort(400, 'Not Valid Username');
-        }
-        $user = Auth::user();
-        if($user->permission=='admin') {
-            $check_user = Singbox::where('port_sb', $port)->count();
-            if ($check_user > 0) {
-                $user = Singbox::where('port_sb', $port)->get();
-                $show = $user[0];
-                if(env('APP_LOCALE', 'en')=='fa')
-                {
-                    if(!empty($show->end_date)){$end_date=Verta::instance($show->end_date)->format('Y-m-d');
+)->format('Y-m-d');
                         $end_date=$this->englishToPersianNumbers($end_date);}
                     else
                     {
@@ -1431,13 +1209,7 @@ class UserController extends Controller
         }
 
     }
-    public function update_sb(Request $request)
-    {
-        $request->validate([
-            'port'=>'required|string',
-            'email'=>'nullable|string',
-            'mobile'=>'nullable|string',
-            'multiuser'=>'required|numeric',
+ed|numeric',
             'traffic'=>'required|numeric',
             'expdate'=>'nullable|string',
             'type_traffic'=>'required|string',
@@ -1647,25 +1419,7 @@ class UserController extends Controller
         }
         return redirect()->back()->with('success', 'Update Success');
     }
-    public function user_all_delete(Request $request)
-    {
-        $users = Users::all();
-        foreach ($users as $user) {
-            $username=$user->username;
-            $multiuser=$user->multiuser;
-
-            if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
-                $linesToRemove = ["Match User {$username}", "Banner /var/www/html/app/storage/banner/{$username}-detail"];
-                $filename = "/etc/ssh/sshd_config";
-                $fileContent = file($filename);
-                $newFileContent = [];
-                foreach ($fileContent as $line) {
-                    if (!in_array(trim($line), $linesToRemove) && trim($line) !== '') {
-                        $newFileContent[] = $line;
-                    }
-                }
-                file_put_contents($filename, implode('', $newFileContent));
-                Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
+            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
                 Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
             }
             Process::run(['sudo', 'killall', '-u', $username]);
