@@ -121,6 +121,9 @@ wellcomeINSTALL() {
   echo -e "${GREEN}  10)XPanel v3.7.9"
   echo -ne "${GREEN}\nSelect Version : ${ENDCOLOR}"
   read n < /dev/tty
+  if [ -z "$n" ]; then
+    n="3"
+  fi
   if [ "$n" != "" ]; then
     if [ "$n" == "1" ]; then
       linkd=https://api.github.com/repos/xpanel-cp/XPanel-SSH-User-Management/releases/tags/v4-0
@@ -354,6 +357,14 @@ EOF
 sed -i '/^[[:space:]]*zend_extension[[:space:]]*=.*ioncube_loader_lin_/d' "/etc/php/${PHP_TARGET_VERSION}/cli/php.ini"
 sed -i '/^[[:space:]]*zend_extension[[:space:]]*=.*ioncube_loader_lin_/d' "/etc/php/${PHP_TARGET_VERSION}/fpm/php.ini"
     bash <(curl -Ls https://raw.githubusercontent.com/MasoudJabbarian/XPanel-SSH-User-Management/master/ioncube.sh --ipv4)
+    wait
+    mkdir -p "/etc/systemd/system/php${PHP_TARGET_VERSION}-fpm.service.d"
+    cat > "/etc/systemd/system/php${PHP_TARGET_VERSION}-fpm.service.d/override.conf" <<EOF
+[Service]
+ProtectSystem=false
+EOF
+    systemctl daemon-reload
+    systemctl restart "php${PHP_TARGET_VERSION}-fpm"
     wait
 
     # Keep the PHP-FPM service compatible with ionCube/XPanel on Ubuntu 22.04+.
@@ -600,8 +611,6 @@ server {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/var/run/php/phpFPM_VERSION-fpm.sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
-        fastcgi_param IONCUBE "/usr/local/ioncube/ioncube_loader_lin_PHP_TARGET_VERSION.so";
-        fastcgi_param PHP_ADMIN_VALUE "zend_extension=/usr/local/ioncube/ioncube_loader_lin_PHP_TARGET_VERSION.so";
     }
     location ~ /\.ht {
         deny all;
@@ -612,18 +621,18 @@ EOF
     sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
     echo '#Xpanel' >/var/www/xpanelport
     sudo sed -i -e '$a\'$'\n''Xpanelport '$serverPort /var/www/xpanelport
+    sed -i "s#phpFPM_VERSION-fpm.sock#php${PHP_TARGET_VERSION}-fpm.sock#g" /etc/nginx/sites-available/default
+    sed -i "/fastcgi_param[[:space:]]\+IONCUBE/d; /fastcgi_param[[:space:]]\+PHP_ADMIN_VALUE.*zend_extension.*ioncube/d" /etc/nginx/sites-available/default
+    if grep -q "phpFPM_VERSION" /etc/nginx/sites-available/default; then
+      echo "ERROR: unresolved PHP-FPM socket placeholder in Nginx configuration."
+      exit 1
+    fi
     wait
     ##Restart the webserver server to use new port
     sudo nginx -t
     sudo systemctl start nginx
     sudo systemctl enable nginx
     sudo systemctl reload nginx
-    # Use the installed PHP-FPM socket on Ubuntu 22.04+.
-    sed -i "s/phpFPM_VERSION-fpm.sock/php${PHP_TARGET_VERSION}-fpm.sock/g" /etc/nginx/sites-available/default
-
-    # Resolve version-specific PHP paths in the generated Nginx configuration.
-    sed -i "s/phpFPM_VERSION-fpm.sock/php${PHP_TARGET_VERSION}-fpm.sock/g" /etc/nginx/sites-available/default
-    sed -i "s/ioncube_loader_lin_PHP_TARGET_VERSION.so/ioncube_loader_lin_${PHP_TARGET_VERSION}.so/g" /etc/nginx/sites-available/default
 
     # Getting Proxy Template
     sudo wget -q -O /usr/local/bin/wss https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/wss
@@ -701,14 +710,10 @@ END
 }
 
 checkDATABASE() {
-  mysql -e "create database XPanel_plus;" &
-  wait
-  mysql -e "CREATE USER '${adminusername}'@'localhost' IDENTIFIED BY '${adminpassword}';" &
-  wait
-  mysql -e "GRANT ALL ON *.* TO '${adminusername}'@'localhost';" &
-  wait
-  mysql -e "ALTER USER '${adminusername}'@'localhost' IDENTIFIED BY '${adminpassword}';" &
-  wait
+  mysql -e "CREATE DATABASE IF NOT EXISTS XPanel_plus;" || exit 1
+  mysql -e "CREATE USER IF NOT EXISTS '${adminusername}'@'localhost' IDENTIFIED BY '${adminpassword}';" || exit 1
+  mysql -e "ALTER USER '${adminusername}'@'localhost' IDENTIFIED BY '${adminpassword}';" || exit 1
+  mysql -e "GRANT ALL ON *.* TO '${adminusername}'@'localhost';" || exit 1
   sed -i "s/DB_USERNAME=.*/DB_USERNAME=$adminusername/g" /var/www/html/app/.env
   sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$adminpassword/g" /var/www/html/app/.env
   cd /var/www/html/app
@@ -732,6 +737,9 @@ moreCONFIG() {
   sed -i "s/PORT_SSH=.*/PORT_SSH=$port/g" /var/www/html/app/.env
   sed -i "s/PORT_UDPGW=.*/PORT_UDPGW=$udpport/g" /var/www/html/app/.env
   sudo chown -R www-data:www-data /var/www/html/app
+  sudo mkdir -p /var/www/html/app/storage /var/www/html/app/bootstrap/cache
+  sudo chown -R www-data:www-data /var/www/html/app/storage /var/www/html/app/bootstrap/cache
+  sudo chmod -R ug+rwX /var/www/html/app/storage /var/www/html/app/bootstrap/cache
   crontab -r
   (crontab -l 2>/dev/null; echo "* * * * * cd /var/www/html/app && php artisan schedule:run >> /dev/null 2>&1") | crontab -
   wait
@@ -758,6 +766,7 @@ ENDOFFILE
   sudo sed -i 's/((/$((/' /var/www/html/kill.sh
   wait
   chmod +x /var/www/html/kill.sh
+  (crontab -l 2>/dev/null | grep -v "artisan schedule:run"; echo "* * * * * cd /var/www/html/app && php artisan schedule:run >> /dev/null 2>&1") | crontab -
 
   othercron=$(echo "$protcohttp://${defdomain}:$sshttp/fixer/other")
   cat >/var/www/html/other.sh <<ENDOFFILE
@@ -954,6 +963,10 @@ ENDOFFILE
   sudo apt-get remove apache2 -y
   sudo apt autoremove -y
   cp /var/www/index.php /var/www/html/example/
+  cd /var/www/html/app
+  php artisan optimize:clear || true
+  chown -R www-data:www-data storage bootstrap/cache
+  chmod -R ug+rwX storage bootstrap/cache
   clear
 }
 endINSTALL() {
