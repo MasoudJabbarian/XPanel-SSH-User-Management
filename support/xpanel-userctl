@@ -63,6 +63,19 @@ add_match_block() {
 }
 
 case "${1:-}" in
+  online-port)
+    [[ $# -eq 2 ]] || die "usage: online-port PORT"
+    valid_port "$2"
+    /usr/bin/lsof -i :"$2" -n -P | grep ESTABLISHED || true
+    ;;
+  traffic-snapshot)
+    [[ $# -eq 1 ]] || die "usage: traffic-snapshot"
+    install -d -o www-data -g www-data -m 0750 /var/www/html/app/storage
+    pkill nethogs 2>/dev/null || true
+    timeout 20 /usr/sbin/nethogs -j -v3 -c6 > /var/www/html/app/storage/out.json || true
+    chown www-data:www-data /var/www/html/app/storage/out.json
+    chmod 0640 /var/www/html/app/storage/out.json
+    ;;
   db-backup)
     [[ $# -eq 1 ]] || die "usage: db-backup"
     ENV_FILE="/var/www/html/app/.env"
