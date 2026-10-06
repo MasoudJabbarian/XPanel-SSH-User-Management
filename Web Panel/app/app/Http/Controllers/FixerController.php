@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Fixer;
 use App\Models\Settings;
 use App\Models\Traffic;
 use App\Models\Users;
@@ -630,14 +629,6 @@ $day
     {
         ProController::check_hourly();
     }
-    public function send_email_detail_acc_3day()
-    {
-        ProController::detail_acc();
-    }
 
-    public function send_email_detail_acc()
-    {
-        ProController::detail2_acc();
-    }
 
 }
