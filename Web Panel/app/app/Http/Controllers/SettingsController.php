@@ -857,7 +857,7 @@ echo curl_get_contents("$site");
                 ? rtrim($folder, '/')
                 : rtrim(ssh2_sftp_realpath($sftp, '.'), '/') . '/' . trim($folder, '/');
 
-            $dir = @opendir('ssh2.sftp://' . $sftp . $remoteFolder);
+            $dir = @opendir('ssh2.sftp://' . intval($sftp) . $remoteFolder);
             if (!$dir) {
                 throw new \RuntimeException('Unable to read the remote backup folder.');
             }
@@ -898,7 +898,7 @@ echo curl_get_contents("$site");
             $restored = 0;
             foreach ($files as $file) {
                 $localPath = $localFolder . '/' . basename($file['name']);
-                $source = @fopen('ssh2.sftp://' . $sftp . $file['path'], 'rb');
+                $source = @fopen('ssh2.sftp://' . intval($sftp) . $file['path'], 'rb');
                 $target = @fopen($localPath, 'wb');
 
                 if (!$source || !$target) {
