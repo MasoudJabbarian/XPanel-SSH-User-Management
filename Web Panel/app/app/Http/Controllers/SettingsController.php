@@ -3,26 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Users;
-use App\Models\Singbox;
 use App\Models\Admins;
 use App\Models\Api;
 use Illuminate\Http\Request;
 use Auth;
 use App\Models\Settings;
 use App\Models\Traffic;
-use App\Models\Trafficsb;
-use App\Models\Xguard;
-use App\Models\Ipadapter;
-use App\Models\Adapterlist;
-use App\Models\License;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Illuminate\Support\Process\ProcessResult;
-use Illuminate\Support\Facades\Http;
-use App\Http\Controllers\ProController;
-use Verta;
 
 
 class SettingsController extends Controller
@@ -93,155 +84,33 @@ class SettingsController extends Controller
     }
     public function index(Request $request,$name)
     {
-
         $this->check();
         if (!is_string($name)) {
-            abort(400, 'Not Valid Username');
+            abort(400, 'Invalid settings section');
         }
-
-        $setting = Settings::all();
-        $ipadapter = Ipadapter::all();
-        $iplist = Adapterlist::all();
-        $apis =Api::all();
-
-        if($name=='general') {
-            $status=$setting[0]->multiuser;
-            $tls_port=$setting[0]->tls_port;
-            $traffic_base=env('TRAFFIC_BASE');
-            return view('settings.general', compact('traffic_base','status','tls_port'));}
-        if($name=='backup') {
-            $token_bot=env('BOT_TOKEN');
-            $id_admin=env('BOT_ID_ADMIN');
-            $list = Process::run("ls /var/www/html/app/storage/backup");
-            $output = $list->output();
-            $backuplist = preg_split("/\r\n|\n|\r/", $output);
-            $lists=$backuplist;
-            $domain=explode(':',$_SERVER['HTTP_HOST']);
-            $domain=$domain[0];
-            $webhook_url = 'https://'.$domain.'/sync.php?bot=y';
-            $api_url = "https://api.telegram.org/bot$token_bot/getWebhookInfo";
-            $ch = curl_init($api_url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            $response = curl_exec($ch);
-
-            if ($response === false) {
-            } else {
-                $webhook_info = json_decode($response, true);
-
-                if ($webhook_info && isset($webhook_info['result'])) {
-                    if ($webhook_info['result']['url'] === $webhook_url && $webhook_info['ok'] === true) {
-                        $status_webhoock='🟢';
-                    } else {
-                        $status_webhoock='🔴';
-                    }
-                } else {
-                    $status_webhoock='🔴';
-                }
-
-            }
-            curl_close($ch);
-            return view('settings.backup', compact('lists','token_bot','id_admin','status_webhoock'));
+        $setting = Settings::first();
+        $apis = Api::all();
+        if ($name === 'general') {
+            $status = $setting?->multiuser ?? 'deactive';
+            $tls_port = $setting?->tls_port ?? null;
+            $traffic_base = env('TRAFFIC_BASE', 12);
+            return view('settings.general', compact('traffic_base','status','tls_port'));
         }
-        if($name=='api') {
-            $apis=$apis;
-            return view('settings.api', compact('apis'));}
-        if($name=='block') {
-            $check_status = Process::run("sudo iptables -L OUTPUT");
-            $output = $check_status->output();
-            $output = preg_split("/\r\n|\n|\r/", $output);
-            $output = count($output) - 3;
-            $status=$output;
+        if ($name === 'backup') {
+            $backupDir = '/var/www/html/app/storage/backup';
+            $lists = is_dir($backupDir) ? array_values(array_diff(scandir($backupDir), ['.','..'])) : [];
+            return view('settings.backup', compact('lists'));
+        }
+        if ($name === 'api') {
+            return view('settings.api', compact('apis'));
+        }
+        if ($name === 'block') {
+            $check_status = Process::run(['sudo','iptables','-L','OUTPUT']);
+            $output = preg_split("/\\r\\n|\\n|\\r/", trim($check_status->output()));
+            $status = max(0, count($output) - 3);
             return view('settings.block', compact('status'));
         }
-        if($name=='fakeaddress') {return view('settings.fake');}
-        if($name=='wordpress') {
-            $protocol = isset($_SERVER['HTTPS']) ? 'https' : 'http';
-            $http_host=$_SERVER['HTTP_HOST'];
-            $output=$http_host.'/';
-            $output=explode(':',$output);
-            $output=$protocol.'://'.$output[0];
-            $address=$output;
-            return view('settings.wordpress', compact('address'));
-        }
-        if($name=='ip-adapter') {
-            return view('settings.ip', compact('ipadapter','iplist'));
-        }
-        if($name=='license') {
-            $response='';
-            $fullDomain = $_SERVER['HTTP_HOST'];
-            $parsedUrl = parse_url($fullDomain);
-            $domainWithoutPort = $parsedUrl['host'];
-            $license = License::first();
-
-            if($license) {
-                $post = [
-                    'email' => $license->email,
-                    'domain' => $license->domain
-                ];
-                $ch = curl_init('https://xguard.xpanel.pro/api/license/validate');
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_POST, 1);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-                $response = curl_exec($ch);
-                $response = json_decode($response, true);
-                curl_close($ch);
-                if (isset($response[0]['message']) and $response[0]['message'] == 'access') {
-                    DB::beginTransaction();
-                    License::where('email', $license->email)->update([
-                        'end_license' => $response[0]['end_license']
-                    ]);
-                    DB::commit();
-                } else {
-                    DB::beginTransaction();
-                    License::where('email', $license->email)->update([
-                        'status' => 'not_access'
-                    ]);
-                    DB::commit();
-                }
-            }
-            else
-            {
-                $post = [
-                    'email' => 'null',
-                    'domain' => 'null'
-                ];
-                $ch = curl_init('https://xguard.xpanel.pro/api/license/validate');
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_POST, 1);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
-                $response = curl_exec($ch);
-                $response = json_decode($response, true);
-                curl_close($ch);
-            }
-            return view('settings.license', compact('license','response','domainWithoutPort'));
-        }
-        if($name=='mail') {
-            return view('settings.mail');
-        }
-        if($name=='cronjob') {
-
-            function is_https() {
-                return (isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) === 'on') ||
-                    (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) ||
-                    (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
-                    (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on');
-            }
-
-            function displayServerURL() {
-                $protocol = is_https() ? "https" : "http";
-                $serverURL = $protocol . "://" . $_SERVER['HTTP_HOST'];
-                return $serverURL;
-            }
-
-            $address= displayServerURL();
-
-
-            $process = Process::run(['sudo', 'cronx']);
-            $outputs = preg_split("/\r\n|\n|\r/", trim($process->output()));
-            $returnVar = $process->exitCode();
-            return view('settings.crontab', compact('outputs','address'));
-        }
-
+        abort(404);
     }
     public function change_port_ssh(Request $request)
     {
@@ -263,20 +132,6 @@ class SettingsController extends Controller
 
     }
 
-    public function change_port_ssh_tls(Request $request)
-    {
-        $this->check();
-        $request->validate([
-            'port_ssh_tls' => 'required|integer|min:1|max:65535',
-        ]);
-        $tlsPort = (int) $request->port_ssh_tls;
-        Process::run(['sudo', 'sed', '-i', "s/accept =.*/accept = {$tlsPort}/g", '/etc/stunnel/stunnel.conf']);
-        Process::run(['sudo', 'systemctl', 'enable', '--now', 'stunnel4']);
-        Settings::where('id', '1')->update(['tls_port' => $request->port_ssh_tls]);
-        return response()->json(['message' => __('settings-port-alert-success')]);
-
-
-    }
     public function update_general(Request $request)
     {
         $this->check();
@@ -360,8 +215,7 @@ class SettingsController extends Controller
 
         return redirect()->intended(route('settings', ['name' => 'general']));
     }
-
-    public function update_telegram(Request $request)
+$request)
     {
         $this->check();
         $request->validate([
@@ -378,25 +232,7 @@ class SettingsController extends Controller
         }
         return redirect()->intended(route('settings', ['name' => 'telegram']));
     }
-
-    public function bot_backup_up(Request $request)
-    {
-
-        if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
-            $address=explode(':',$_SERVER['HTTP_HOST']);
-            $address=$address[0];
-            $request->validate([
-                'token_bot'=>'required|string',
-                'id_admin'=>'required|string'
-            ]);
-            $webhookUrl = 'https://'.$address.'/sync.php?bot=y';
-
-            $data = [
-                'url' => $webhookUrl,
-            ];
-
-            $ch = curl_init("https://api.telegram.org/bot{$request->token_bot}/setWebhook");
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+ 1);
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
             curl_exec($ch);
@@ -627,21 +463,7 @@ class SettingsController extends Controller
 
         return redirect()->intended(route('settings', ['name' => 'block']));
     }
-
-    public function fakeurl(Request $request)
-    {
-        $this->check();
-        $request->validate([
-            'fake_address'=>'required|string'
-        ]);
-        $txt = '
-<?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-function curl_get_contents($url) {
-    $ch = curl_init();
-    $header[0] = "Accept: text/xml,application/xml,application/xhtml+xml,font/woff,font/woff2,";
+er[0] = "Accept: text/xml,application/xml,application/xhtml+xml,font/woff,font/woff2,";
     $header[0] .= "text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5,application/font-woff,*";
     $header[] = "Access-Control-Allow-Origin: *";
     $header[] = "Connection: keep-alive";
@@ -669,11 +491,7 @@ echo curl_get_contents("$site");
         file_put_contents("/var/www/html/example/index.php", $txt);
         return redirect()->intended(route('settings', ['name' => 'fakeaddress']));
     }
-    public function mail_smtp(Request $request)
-    {
-        $this->check();
-        $validatedData = $request->validate([
-            'host'=>'required|string',
+red|string',
             'port'=>'required|string',
             'username'=>'required|string',
             'password'=>'required|string',
@@ -685,37 +503,7 @@ echo curl_get_contents("$site");
         ProController::setting_mail($validatedData);
         return redirect()->intended(route('settings', ['name' => 'mail']))->with('alert', __('allert-success'));
     }
-    public function ipadapter_update(Request $request)
-    {
-        $this->check();
-        $validatedData = $request->validate([
-            'email'=>'required|string',
-            'token'=>'required|string',
-            'sub'=>'required|string',
-            'gb'=>'required|string',
-            'change'=>'required|string',
-            'status_service'=>'required|string'
-        ]);
-
-        $result = ProController::submit_cf($validatedData);
-        return redirect()->intended(route('settings', ['name' => 'ip-adapter']))->with('alert', $result);
-    }
-    public function ipadapter_add(Request $request)
-    {
-        $this->check();
-        $request->validate([
-            'ip'=>'required|string'
-        ]);
-        $check_ip = Adapterlist::where('ip',$request->ip)->count();
-        if($check_ip>0)
-        {
-            $msg=__('ip-adapter-change-popup-ip-rep');
-        }
-        else
-        {
-            DB::beginTransaction();
-            Adapterlist::create([
-                'ip' => $request->ip,
+p,
                 'status_active' => 'pending',
                 'status_service' => 'access'
             ]);
@@ -724,101 +512,12 @@ echo curl_get_contents("$site");
         }
         return redirect()->intended(route('settings', ['name' => 'ip-adapter']))->with('alert', $msg);
     }
-    public function ipadapter_active(Request $request,$id)
-    {
-        $this->check();
-        if (!is_numeric($id)) {
-            abort(400, 'Not Valid Username');
-        }
-        $result = ProController::set_cf($id);
-        return redirect()->intended(route('settings', ['name' => 'ip-adapter']))->with('alert', $result);
-    }
-    public function ipadapter_access(Request $request,$id)
-    {
-        $this->check();
-        if (!is_numeric($id)) {
-            abort(400, 'Not Valid Username');
-        }
-        DB::beginTransaction();
-        Adapterlist::where('id', $id)->update([
-            'status_service' => 'access'
-        ]);
-        DB::commit();
-        return redirect()->intended(route('settings', ['name' => 'ip-adapter']))->with('alert', __('allert-success'));
-    }
-    public function ipadapter_filter(Request $request,$id)
-    {
-        $this->check();
-        if (!is_numeric($id)) {
-            abort(400, 'Not Valid Username');
-        }
-        DB::beginTransaction();
-        Adapterlist::where('id', $id)->update([
-            'status_service' => 'filter'
-        ]);
-        DB::commit();
-        return redirect()->intended(route('settings', ['name' => 'ip-adapter']))->with('alert', __('allert-success'));
-    }
-    public function ipadapter_filter2(Request $request,$id)
-    {
-        $this->check();
-        if (!is_numeric($id)) {
-            abort(400, 'Not Valid Username');
-        }
-        DB::beginTransaction();
-        Adapterlist::where('id', $id)->update([
-            'status_service' => 'filter2'
-        ]);
-        DB::commit();
-        return redirect()->intended(route('settings', ['name' => 'ip-adapter']))->with('alert', __('allert-success'));
-    }
-    public function license(Request $request)
-    {
-        $this->check();
-        $request->validate([
-            'email' => 'required|string',
-            'domain' => 'required|string',
-        ]);
 
-        $check_lic = License::all()->count();
-        if($check_lic<1)
-        {
-            DB::beginTransaction();
-            License::create([
-                'email' => $request->email,
-                'domain' => $request->domain,
-                'end_license' => '',
-                'status' => 'not_access'
-            ]);
-            DB::commit();
-        }
-        else
-        {
-            $lic = License::first();
-            DB::beginTransaction();
-            License::where('id',$lic->id)->update([
-                'email' => $request->email,
-                'domain' => $request->domain
-            ]);
-            DB::commit();
-        }
-        return view('license', [
-            'email' => $request->email,
-            'domain' => $request->domain
         ]);
-
+        DB::commit();
+        return redirect()->intended(route('settings', ['name' => 'ip-adapter']))->with('alert', __('allert-success'));
     }
-    public function license_delete(Request $request,$id)
-    {
-        $this->check();
-        if (!is_numeric($id)) {
-            abort(400, 'Not Valid Username');
-        }
-        License::where('id', $id)->delete();
-        return redirect()->intended(route('settings', ['name' => 'license']))->with('alert', __('allert-success'));
-    }
-    public function ip_delete(Request $request,$id)
-    {
+  {
         $this->check();
         if (!is_numeric($id)) {
             abort(400, 'Not Valid Username');
@@ -826,21 +525,3 @@ echo curl_get_contents("$site");
         Adapterlist::where('id', $id)->delete();
         return redirect()->intended(route('settings', ['name' => 'ip-adapter']))->with('alert', __('allert-success'));
     }
-
-    public function crontab_fixed(Request $request)
-    {
-        $this->check();
-        $request->validate([
-            'address' => 'required|string'
-        ]);
-        $request->validate(['address' => 'required|string|regex:/^[a-zA-Z0-9.-]+(?::[0-9]{1,5})?$/']);
-        $process = Process::run(['sudo', 'cronxfixed', $request->address]);
-        $outputs = preg_split("/\r\n|\n|\r/", trim($process->output()));
-        $returnVar = $process->exitCode();
-        return redirect()->intended(route('settings', ['name' => 'cronjob']))->with('alert', __('allert-success'));
-    }
-
-
-
-
-}
