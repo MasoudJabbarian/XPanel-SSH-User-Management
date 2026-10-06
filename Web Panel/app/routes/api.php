@@ -1,19 +1,20 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\ApiController;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
-*/
-
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::middleware('throttle:api')->group(function () {
+    Route::get('/users', [ApiController::class, 'listuser'])->name('api.listuser');
+    Route::get('/users/{sort}', [ApiController::class, 'sort_listuser'])->name('api.listuser.sort');
+    Route::post('/users', [ApiController::class, 'add_user'])->name('api.add.user');
+    Route::get('/users/{username}', [ApiController::class, 'show_detail'])->name('api.show.detail');
+    Route::post('/users/edit', [ApiController::class, 'edit'])->name('api.user.edit');
+    Route::post('/users/delete', [ApiController::class, 'delete_user'])->name('api.user.delete');
+    Route::post('/users/active', [ApiController::class, 'active_user'])->name('api.user.active');
+    Route::post('/users/deactive', [ApiController::class, 'deactive_user'])->name('api.user.deactive');
+    Route::post('/users/traffic/reset', [ApiController::class, 'retrafic_user'])->name('api.user.retraffic');
+    Route::post('/users/renewal', [ApiController::class, 'renewal_user'])->name('api.user.renewal');
+    Route::get('/users/traffic', [ApiController::class, 'traffic_user'])->name('api.user.traffic');
+    Route::get('/online', [ApiController::class, 'online_user'])->name('api.user.online');
+    Route::post('/kill/{method}/{param}', [ApiController::class, 'kill'])->name('api.user.kill');
 });
