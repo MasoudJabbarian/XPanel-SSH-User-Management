@@ -1,23 +1,35 @@
+#!/bin/bash
+
 uname=$(uname -i)
 if [[ $uname == x86_64 ]]; then
-wget -4 https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz
-sudo tar xzf ioncube_loaders_lin_x86-64.tar.gz -C /usr/local
-sudo rm -rf ioncube_loaders_lin_x86-64.tar.gz
+  wget -4 https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz
+  sudo tar xzf ioncube_loaders_lin_x86-64.tar.gz -C /usr/local
+  sudo rm -rf ioncube_loaders_lin_x86-64.tar.gz
 fi
 if [[ $uname == aarch64 ]]; then
-wget -4 https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_aarch64.tar.gz
-sudo tar xzf ioncube_loaders_lin_aarch64.tar.gz -C /usr/local
-sudo rm -rf ioncube_loaders_lin_aarch64.tar.gz
+  wget -4 https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_aarch64.tar.gz
+  sudo tar xzf ioncube_loaders_lin_aarch64.tar.gz -C /usr/local
+  sudo rm -rf ioncube_loaders_lin_aarch64.tar.gz
 fi
-PHPVERSION=$(php -i | grep /.+/php.ini -oE | sed 's/[^0-9.]*//g')
 
-echo "zend_extension = /usr/local/ioncube/ioncube_loader_lin_${PHPVERSION}.so" > /etc/php/${PHPVERSION::-1}/fpm/conf.d/00-ioncube.ini
-echo "zend_extension = /usr/local/ioncube/ioncube_loader_lin_${PHPVERSION}.so" > /etc/php/${PHPVERSION::-1}/cli/conf.d/00-ioncube.ini
-
-PHP_INI_PATH="/etc/php/${PHPVERSION::-1}/fpm/php.ini"
+# Resolve the actual PHP major/minor version (for example 8.1).
+PHPVERSION=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
+PHP_FPM_DIR="/etc/php/${PHPVERSION}/fpm"
+PHP_CLI_DIR="/etc/php/${PHPVERSION}/cli"
 ZEND_EXTENSION_PATH="/usr/local/ioncube/ioncube_loader_lin_${PHPVERSION}.so"
-if [ -f "$PHP_INI_PATH" ]; then
-  grep -q "^zend_extension" "$PHP_INI_PATH" && sed -i "s@^zend_extension.*@zend_extension = $ZEND_EXTENSION_PATH@" "$PHP_INI_PATH" || echo "zend_extension = $ZEND_EXTENSION_PATH" >> "$PHP_INI_PATH"
+
+mkdir -p "${PHP_FPM_DIR}/conf.d" "${PHP_CLI_DIR}/conf.d"
+
+echo "zend_extension = ${ZEND_EXTENSION_PATH}" > "${PHP_FPM_DIR}/conf.d/00-ioncube.ini"
+echo "zend_extension = ${ZEND_EXTENSION_PATH}" > "${PHP_CLI_DIR}/conf.d/00-ioncube.ini"
+
+# Remove old ionCube entries from main php.ini files to prevent duplicate loading.
+if [ -f "${PHP_FPM_DIR}/php.ini" ]; then
+  sed -i '/^[[:space:]]*zend_extension[[:space:]]*=.*ioncube_loader_lin_/d' "${PHP_FPM_DIR}/php.ini"
 fi
-systemctl restart "php${PHPVERSION::-1}-fpm"
+if [ -f "${PHP_CLI_DIR}/php.ini" ]; then
+  sed -i '/^[[:space:]]*zend_extension[[:space:]]*=.*ioncube_loader_lin_/d' "${PHP_CLI_DIR}/php.ini"
+fi
+
+systemctl restart "php${PHPVERSION}-fpm"
 systemctl restart nginx
