@@ -12,7 +12,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('backup:remote')->everyMinute()->withoutOverlapping(120);
+        $schedule->command('backup:remote')->everyMinute()->withoutOverlapping();
     }
 
     /**
