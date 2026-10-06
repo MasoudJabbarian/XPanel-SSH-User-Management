@@ -811,6 +811,126 @@ echo curl_get_contents("$site");
 
 
 
+    public function restore_remote_backups(Request $request)
+    {
+        $this->check();
+
+        $settings = Settings::firstOrFail();
+
+        if (!function_exists('ssh2_connect')) {
+            return redirect()->route('settings.remote-backup')
+                ->withErrors(['remote_backup' => 'PHP SSH2 extension is not installed.']);
+        }
+
+        try {
+            $host = trim((string) $settings->remote_backup_host);
+            $host = preg_replace('#^ssh://#i', '', $host);
+            $host = trim($host, '/');
+            $folder = trim((string) ($settings->remote_backup_folder ?? ''));
+            $username = trim((string) $settings->remote_backup_username);
+            $password = (string) $settings->remote_backup_password;
+            $port = (int) $settings->remote_backup_port ?: 22;
+
+            if ($host === '' || $folder === '' || $username === '' || $password === '') {
+                throw new \RuntimeException('Remote backup settings are incomplete.');
+            }
+
+            if (str_contains($folder, '..')) {
+                throw new \RuntimeException('Remote backup folder cannot contain "..".');
+            }
+
+            $connection = @ssh2_connect($host, $port);
+            if (!$connection) {
+                throw new \RuntimeException('Unable to connect to the backup server over SSH.');
+            }
+
+            if (!@ssh2_auth_password($connection, $username, $password)) {
+                throw new \RuntimeException('SSH authentication failed for the backup server.');
+            }
+
+            $sftp = @ssh2_sftp($connection);
+            if (!$sftp) {
+                throw new \RuntimeException('Unable to initialize the SFTP subsystem.');
+            }
+
+            $remoteFolder = $folder[0] === '/'
+                ? rtrim($folder, '/')
+                : rtrim(ssh2_sftp_realpath($sftp, '.'), '/') . '/' . trim($folder, '/');
+
+            $dir = @opendir('ssh2.sftp://' . $sftp . $remoteFolder);
+            if (!$dir) {
+                throw new \RuntimeException('Unable to read the remote backup folder.');
+            }
+
+            $files = [];
+            while (($name = readdir($dir)) !== false) {
+                if ($name === '.' || $name === '..' || !preg_match('/\\.sql\\.gz$/i', $name)) {
+                    continue;
+                }
+
+                $remotePath = $remoteFolder . '/' . $name;
+                $stat = @ssh2_sftp_stat($sftp, $remotePath);
+                if (!$stat || !isset($stat['mtime']) || !isset($stat['size'])) {
+                    continue;
+                }
+
+                $files[] = [
+                    'name' => $name,
+                    'path' => $remotePath,
+                    'mtime' => (int) $stat['mtime'],
+                    'size' => (int) $stat['size'],
+                ];
+            }
+            closedir($dir);
+
+            usort($files, fn ($a, $b) => $b['mtime'] <=> $a['mtime']);
+            $files = array_slice($files, 0, 5);
+
+            if (!$files) {
+                throw new \RuntimeException('No .sql.gz backup files were found on the backup server.');
+            }
+
+            $localFolder = storage_path('app/backup');
+            if (!is_dir($localFolder) && !mkdir($localFolder, 0755, true) && !is_dir($localFolder)) {
+                throw new \RuntimeException('Unable to create the local backup folder.');
+            }
+
+            $restored = 0;
+            foreach ($files as $file) {
+                $localPath = $localFolder . '/' . basename($file['name']);
+                $source = @fopen('ssh2.sftp://' . $sftp . $file['path'], 'rb');
+                $target = @fopen($localPath, 'wb');
+
+                if (!$source || !$target) {
+                    if (is_resource($source)) {
+                        fclose($source);
+                    }
+                    if (is_resource($target)) {
+                        fclose($target);
+                    }
+                    throw new \RuntimeException('Unable to download backup file: ' . $file['name']);
+                }
+
+                $copied = stream_copy_to_stream($source, $target);
+                fclose($source);
+                fclose($target);
+
+                if ($copied === false || $copied !== $file['size']) {
+                    @unlink($localPath);
+                    throw new \RuntimeException('Backup download was incomplete: ' . $file['name']);
+                }
+
+                $restored++;
+            }
+
+            return redirect()->route('settings.remote-backup')
+                ->with('success', $restored . ' latest backup file(s) were restored from the backup server.');
+        } catch (\Throwable $e) {
+            return redirect()->route('settings.remote-backup')
+                ->withErrors(['remote_backup' => $e->getMessage()]);
+        }
+    }
+
     public function remote_backup()
     {
         $this->check();
