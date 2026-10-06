@@ -63,6 +63,35 @@ add_match_block() {
 }
 
 case "${1:-}" in
+  db-backup)
+    [[ $# -eq 1 ]] || die "usage: db-backup"
+    ENV_FILE="/var/www/html/app/.env"
+    [[ -f "$ENV_FILE" ]] || die "missing application environment"
+    set -a; . "$ENV_FILE"; set +a
+    [[ "$DB_DATABASE" =~ ^[A-Za-z0-9_]+$ && "$DB_USERNAME" =~ ^[A-Za-z0-9_]+$ ]] || die "invalid database configuration"
+    install -d -o www-data -g www-data -m 0750 "$BANNER_DIR/../backup"
+    name="XPanel-$(date +%Y%m%d-%H%M%S).sql"
+    MYSQL_PWD="$DB_PASSWORD" mysqldump --single-transaction --routines --triggers -u "$DB_USERNAME" "$DB_DATABASE" > "$BANNER_DIR/../backup/$name"
+    chown www-data:www-data "$BANNER_DIR/../backup/$name"
+    chmod 0640 "$BANNER_DIR/../backup/$name"
+    ;;
+  db-restore)
+    [[ $# -eq 2 ]] || die "usage: db-restore FILE"
+    file="$2"
+    [[ "$file" == "$(basename -- "$file")" && "$file" =~ ^[A-Za-z0-9._-]+\.sql(\.gz)?$ ]] || die "invalid backup filename"
+    ENV_FILE="/var/www/html/app/.env"
+    [[ -f "$ENV_FILE" ]] || die "missing application environment"
+    set -a; . "$ENV_FILE"; set +a
+    [[ "$DB_DATABASE" =~ ^[A-Za-z0-9_]+$ && "$DB_USERNAME" =~ ^[A-Za-z0-9_]+$ ]] || die "invalid database configuration"
+    path="/var/www/html/app/storage/backup/$file"
+    [[ -f "$path" ]] || die "backup does not exist"
+    if [[ "$file" == *.gz ]]; then
+      gzip -cd -- "$path" | MYSQL_PWD="$DB_PASSWORD" mysql -u "$DB_USERNAME" "$DB_DATABASE"
+    else
+      MYSQL_PWD="$DB_PASSWORD" mysql -u "$DB_USERNAME" "$DB_DATABASE" < "$path"
+    fi
+    ;;
+
   add)
     [[ $# -eq 4 ]] || die "usage: add USER PASSWORD MAX_LOGINS"
     user="$2"; password="$3"; max="$4"; valid_user "$user"
