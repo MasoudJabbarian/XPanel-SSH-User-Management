@@ -119,7 +119,7 @@ class ApiController extends Controller
                 'upload' => '0',
                 'total' => '0'
             ]);
-            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$request->username, \$request->password, (string) \$request->multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $request->username, $request->password, (string) $request->multiuser]);
 
             return response()->json(['message' => 'User Created']);
         }
