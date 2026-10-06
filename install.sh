@@ -80,7 +80,7 @@ $values = [
  "PANEL_ADMIN_PASSWORD" => $argv[4],
  "PORT_SSH" => $argv[5],
  "CRON_TRAFFIC" => "active",
- "ANTI_USER" => "active",
+ "ANTI_USER" => "deactive",
  "STATUS_LOG" => "deactive"
 ];
 foreach ($values as $k => $val) {
