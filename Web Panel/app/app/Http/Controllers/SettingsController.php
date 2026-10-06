@@ -251,12 +251,11 @@ class SettingsController extends Controller
         $port = (int) $request->port_ssh;
         $result = Process::run(['sudo', 'sed', '-i', "s/^\\s*Port\\s.*/Port {$port}/", '/etc/ssh/sshd_config']);
         if ($result->successful()) {
-            shell_exec("sed -i 's/PORT_SSH=.*/PORT_SSH={$request->port_ssh}/g' /var/www/html/app/.env");
-            shell_exec("sudo sed -i \"s/DEFAULT_HOST =.*/DEFAULT_HOST = \'127.0.0.1:{$request->port_ssh}\'/g\" /usr/local/bin/wss");
-            shell_exec("sudo sed -i \"s/connect =.*/connect = 0.0.0.0:{$request->port_ssh}/g\" /etc/stunnel/stunnel.conf");
-            shell_exec("sudo systemctl daemon-reload");
-            shell_exec("sudo systemctl enable wss");
-            shell_exec("sudo systemctl restart wss");
+            $this->setEnvValue('PORT_SSH', (string) $port);
+            Process::run(['sudo', 'sed', '-i', "s/DEFAULT_HOST =.*/DEFAULT_HOST = '127.0.0.1:{$port}'/g", '/usr/local/bin/wss']);
+            Process::run(['sudo', 'sed', '-i', "s/connect =.*/connect = 0.0.0.0:{$port}/g", '/etc/stunnel/stunnel.conf']);
+            Process::run(['sudo', 'systemctl', 'daemon-reload']);
+            Process::run(['sudo', 'systemctl', 'enable', '--now', 'wss']);
         }
         return response()->json(['message' => __('settings-port-alert-success')]);
 
