@@ -123,6 +123,7 @@ wellcomeINSTALL() {
   echo -e "${GREEN}  10)XPanel v3.7.9"
   echo -ne "${GREEN}\nSelect Version : ${ENDCOLOR}"
   read n < /dev/tty
+  if [ -z "$n" ]; then n="3"; fi
   if [ "$n" != "" ]; then
     if [ "$n" == "1" ]; then
       linkd=https://api.github.com/repos/xpanel-cp/XPanel-SSH-User-Management/releases/tags/v4-0
@@ -324,14 +325,14 @@ EOF
     sudo unzip -o /var/www/html/update.zip -d /var/www/html/ &
     wait
 
-    # Add the automatic remote-backup feature to the selected XPanel release.
+    # Add the automatic remote-backup feature only to XPanel v3.9.7.
+    if [ "$n" == "3" ]; then
     FEATURE_RAW="https://raw.githubusercontent.com/MasoudJabbarian/XPanel-SSH-User-Management/v3.9.7-fixed"
     sudo mkdir -p "/var/www/html/app/app/Console/Commands" "/var/www/html/app/app/Console" \
       "/var/www/html/app/app/Http/Controllers" "/var/www/html/app/app/Models" \
       "/var/www/html/app/database/migrations" "/var/www/html/app/resources/views/layouts" \
       "/var/www/html/app/resources/views/settings"
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Console/Commands/BackupRemote.php" -o /var/www/html/app/app/Console/Commands/BackupRemote.php
-    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Http/Controllers/RemoteBackupController.php" -o /var/www/html/app/app/Http/Controllers/RemoteBackupController.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Console/Kernel.php" -o /var/www/html/app/app/Console/Kernel.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Models/Settings.php" -o /var/www/html/app/app/Models/Settings.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/database/migrations/2026_10_06_000001_add_remote_backup_settings.php" -o /var/www/html/app/database/migrations/2026_10_06_000001_add_remote_backup_settings.php
@@ -339,12 +340,13 @@ EOF
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/settings/remote-backup.blade.php" -o /var/www/html/app/resources/views/settings/remote-backup.blade.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/routes/web.php" -o /var/www/html/app/routes/web.php
     wait
+    fi
 
     sudo wget -4 -O /usr/local/bin/cronx https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronx
     chmod +x /usr/local/bin/cronx
     sudo wget -4 -O /usr/local/bin/cronxfixed https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronxfixed
     chmod +x /usr/local/bin/cronxfixed
-        bash <(curl -Ls https://raw.githubusercontent.com/MasoudJabbarian/XPanel-SSH-User-Management/v3.9.7-fixed/ioncube.sh --ipv4)
+    bash <(curl -Ls https://raw.githubusercontent.com/MasoudJabbarian/XPanel-SSH-User-Management/v3.9.7-fixed/ioncube.sh --ipv4)
     wait
     echo 'www-data ALL=(ALL:ALL) NOPASSWD:/usr/local/bin/cronx' | sudo EDITOR='tee -a' visudo &
     wait
@@ -588,6 +590,7 @@ server {
 EOF
     sed -i "s/serverPort/$serverPort/g" /etc/nginx/sites-available/default
     sed -i '/fastcgi_param[[:space:]]\+IONCUBE/d; /fastcgi_param[[:space:]]\+PHP_ADMIN_VALUE.*zend_extension.*ioncube/d' /etc/nginx/sites-available/default
+    sed -i '/fastcgi_param[[:space:]]\+IONCUBE/d; /fastcgi_param[[:space:]]\+PHP_ADMIN_VALUE.*zend_extension.*ioncube/d' /etc/nginx/sites-available/default
     sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
     echo '#Xpanel' >/var/www/xpanelport
     sudo sed -i -e '$a\'$'\n''Xpanelport '$serverPort /var/www/xpanelport
@@ -708,6 +711,7 @@ moreCONFIG() {
   sudo chown -R www-data:www-data /var/www/html/app/storage /var/www/html/app/bootstrap/cache
   sudo chmod -R ug+rwX /var/www/html/app/storage /var/www/html/app/bootstrap/cache
   crontab -r
+  (crontab -l 2>/dev/null | grep -v "artisan schedule:run"; echo "* * * * * cd /var/www/html/app && php artisan schedule:run >> /dev/null 2>&1") | crontab -
   (crontab -l 2>/dev/null | grep -v "artisan schedule:run"; echo "* * * * * cd /var/www/html/app && php artisan schedule:run >> /dev/null 2>&1") | crontab -
   wait
 
