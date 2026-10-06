@@ -325,7 +325,7 @@ EOF
     chmod +x /usr/local/bin/cronx
     sudo wget -4 -O /usr/local/bin/cronxfixed https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronxfixed
     chmod +x /usr/local/bin/cronxfixed
-    sed -i 's@zend_extension = /usr/local/ioncube/ioncube_loader_lin_8.1.so@@' /etc/php/8.3/cli/php.ini
+    sed -i 's@zend_extension = /usr/local/ioncube/ioncube_loader_lin_8.3.so@@' /etc/php/8.3/cli/php.ini
     bash <(curl -Ls https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/ioncube.sh --ipv4)
     wait
     echo 'www-data ALL=(ALL:ALL) NOPASSWD:/usr/local/bin/cronx' | sudo EDITOR='tee -a' visudo &
@@ -562,8 +562,8 @@ server {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
-        fastcgi_param IONCUBE "/usr/local/ioncube/ioncube_loader_lin_8.1.so";
-        fastcgi_param PHP_ADMIN_VALUE "zend_extension=/usr/local/ioncube/ioncube_loader_lin_8.1.so";
+        fastcgi_param IONCUBE "/usr/local/ioncube/ioncube_loader_lin_8.3.so";
+        fastcgi_param PHP_ADMIN_VALUE "zend_extension=/usr/local/ioncube/ioncube_loader_lin_8.3.so";
     }
     location ~ /\.ht {
         deny all;
@@ -599,7 +599,7 @@ User=root
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
-ExecStart=/usr/bin/python -O /usr/local/bin/wss 8880
+ExecStart=/usr/bin/python3 -O /usr/local/bin/wss 8880
 Restart=on-failure
 
 [Install]
@@ -622,7 +622,7 @@ User=root
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
-ExecStart=/usr/bin/python -O /usr/local/bin/wssd 9990
+ExecStart=/usr/bin/python3 -O /usr/local/bin/wssd 9990
 Restart=on-failure
 
 [Install]
