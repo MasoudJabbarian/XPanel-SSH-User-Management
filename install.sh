@@ -52,12 +52,11 @@ checkOS() {
     exit 1
   fi
 
-  # This script only works on Ubuntu 20 and above
+  # This installer supports Ubuntu 22.04 LTS and newer releases.
   if [ "$(uname)" == "Linux" ]; then
     version_info=$(lsb_release -rs | cut -d '.' -f 1)
-    # Check if it's Ubuntu and version is below 20
-    if [ "$(lsb_release -is)" == "Ubuntu" ] && [ "$version_info" -lt 20 ]; then
-      echo "This script only works on Ubuntu 20 and above"
+    if [ "$(lsb_release -is)" == "Ubuntu" ] && [ "$version_info" -lt 22 ]; then
+      echo "This script only works on Ubuntu 22.04 and above"
       exit
     fi
   fi
@@ -248,34 +247,34 @@ startINSTALL() {
     sudo apt-get install nginx zip unzip net-tools mariadb-server -y
     sudo apt-get install php php-cli php-mbstring php-dom php-pdo php-mysql -y
     sudo apt-get install npm -y
-    sudo apt install python -y
+    sudo apt install python-is-python3 -y
     sudo apt install python3 -y
     sudo apt install iftop -y
     sudo apt install apt-transport-https -y
     sudo apt-get install coreutils
     apt install curl -y
     apt install git cmake -y
-    apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl cron -y
-    sudo apt install php8.1-fpm
-    sudo apt install php8.1 php8.1-cli php8.1-common php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl php8.1-simplexml -y
+    # Laravel 10 supports PHP 8.1-8.3. Keep PHP 8.1 on Ubuntu 22.04,
+    # and use PHP 8.3 on newer Ubuntu releases where 8.1 is not provided
+    # by the distribution repositories.
+    if [ "${version_info:-$(lsb_release -rs | cut -d '.' -f 1)}" -eq 22 ]; then
+      PHP_TARGET_VERSION="8.1"
+    else
+      PHP_TARGET_VERSION="8.3"
+    fi
+
+    apt-get install -y php${PHP_TARGET_VERSION} php${PHP_TARGET_VERSION}-cli php${PHP_TARGET_VERSION}-common \
+      php${PHP_TARGET_VERSION}-opcache php${PHP_TARGET_VERSION}-mysql php${PHP_TARGET_VERSION}-mbstring \
+      php${PHP_TARGET_VERSION}-zip php${PHP_TARGET_VERSION}-intl php${PHP_TARGET_VERSION}-xml \
+      php${PHP_TARGET_VERSION}-curl php${PHP_TARGET_VERSION}-fpm cron
     wait
 
     phpv=$(php -v)
-    if [[ $phpv == *"8.1"* ]]; then
-
-      apt autoremove -y
-      echo "PHP Is Installed :)"
-    else
-      rm -fr /etc/php/7.4/apache2/conf.d/00-ioncube.ini
-      sudo apt-get purge '^php7.*' -y
-      apt remove php* -y
-      apt remove php -y
-      apt autoremove -y
-      apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl cron -y
-      sudo apt install php8.1-fpm
-      sudo apt install php8.1 php8.1-cli php8.1-common  php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl php8.1-simplexml -y
-
+    if [[ "$phpv" != *"${PHP_TARGET_VERSION}"* ]]; then
+      update-alternatives --set php "/usr/bin/php${PHP_TARGET_VERSION}" 2>/dev/null || true
+      phpv=$(php -v)
     fi
+    echo "PHP ${PHP_TARGET_VERSION} is installed :)"
     curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
     echo "/bin/false" >>/etc/shells
     echo "/usr/sbin/nologin" >>/etc/shells
@@ -465,7 +464,7 @@ server {
     }
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_pass unix:/var/run/php/phpFPM_VERSION-fpm.sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
     }
     location ~ /\.ht {
@@ -581,6 +580,9 @@ EOF
     sudo systemctl start nginx
     sudo systemctl enable nginx
     sudo systemctl reload nginx
+    # Use the installed PHP-FPM socket on Ubuntu 22.04+.
+    sed -i "s/phpFPM_VERSION-fpm.sock/php${PHP_TARGET_VERSION}-fpm.sock/g" /etc/nginx/sites-available/default
+
     # Getting Proxy Template
     sudo wget -q -O /usr/local/bin/wss https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/wss
     sudo chmod +x /usr/local/bin/wss
