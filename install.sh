@@ -258,7 +258,7 @@ startINSTALL() {
     apt install curl -y
     apt install git cmake -y
     apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl cron -y
-    sudo apt install php8.1-fpm
+    sudo apt install php8.1-fpm -y
     sudo apt install php8.1 php8.1-cli php8.1-common php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl -y
     wait
 
@@ -275,7 +275,7 @@ startINSTALL() {
       apt autoremove -y
       apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl cron -y
       sudo apt install php8.1-fpm
-      sudo apt install php8.1 php8.1-cli php8.1-common  php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl php8.1-simplexml -y
+      sudo apt install php8.1 php8.1-cli php8.1-common  php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl -y
 
     fi
     curl -sS https://getcomposer.org/installer | sudo php -- --install-dir=/usr/local/bin --filename=composer
@@ -335,7 +335,7 @@ EOF
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Console/Commands/BackupRemote.php" -o /var/www/html/app/app/Console/Commands/BackupRemote.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Console/Kernel.php" -o /var/www/html/app/app/Console/Kernel.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Models/Settings.php" -o /var/www/html/app/app/Models/Settings.php
-    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/database/migrations/2026_10_06_000001_add_remote_backup_settings.php" -o /var/www/html/app/database/migrations/2026_10_06_000001_add_remote_backup_settings.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/database/migrations/2026_10_07_000001_add_remote_backup_settings.php" -o /var/www/html/app/database/migrations/2026_10_06_000001_add_remote_backup_settings.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/layouts/setting_menu.blade.php" -o /var/www/html/app/resources/views/layouts/setting_menu.blade.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/settings/remote-backup.blade.php" -o /var/www/html/app/resources/views/settings/remote-backup.blade.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/routes/web.php" -o /var/www/html/app/routes/web.php
