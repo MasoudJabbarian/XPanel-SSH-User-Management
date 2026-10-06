@@ -74,6 +74,7 @@ Route::prefix("$panel")->group(function()
     Route::get('/settings',[SettingsController::class,'defualt'])->name('setting');
     Route::get('/settings/remote-backup',[SettingsController::class,'remote_backup'])->name('settings.remote-backup');
     Route::post('/settings/remote-backup',[SettingsController::class,'remote_backup_save'])->name('settings.remote-backup.save');
+Route::post('/settings/remote-backup/restore',[SettingsController::class,'restore_remote_backups'])->name('settings.remote-backup.restore');
     Route::get('/settings/{name}',[SettingsController::class,'index'])->name('settings');
     Route::get('/settings/mod/{name}',[SettingsController::class,'mod'])->name('mod');
     Route::get('/settings/lang/{name}',[SettingsController::class,'lang'])->name('lang');
