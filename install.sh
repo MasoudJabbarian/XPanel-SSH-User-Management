@@ -336,6 +336,7 @@ EOF
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Models/Settings.php" -o /var/www/html/app/app/Models/Settings.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Http/Controllers/SettingsController.php" -o /var/www/html/app/app/Http/Controllers/SettingsController.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/database/migrations/2026_10_07_000001_add_remote_backup_settings.php" -o /var/www/html/app/database/migrations/2026_10_07_000001_add_remote_backup_settings.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/database/migrations/2026_10_07_000002_switch_remote_backup_to_sftp.php" -o /var/www/html/app/database/migrations/2026_10_07_000002_switch_remote_backup_to_sftp.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/layouts/setting_menu.blade.php" -o /var/www/html/app/resources/views/layouts/setting_menu.blade.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/settings/remote-backup.blade.php" -o /var/www/html/app/resources/views/settings/remote-backup.blade.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/routes/web.php" -o /var/www/html/app/routes/web.php
