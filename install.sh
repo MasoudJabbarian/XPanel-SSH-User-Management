@@ -56,8 +56,8 @@ checkOS() {
   if [ "$(uname)" == "Linux" ]; then
     version_info=$(lsb_release -rs | cut -d '.' -f 1)
     # Check if it's Ubuntu and version is below 20
-    if [ "$(lsb_release -is)" == "Ubuntu" ] && [ "$version_info" -lt 20 ]; then
-      echo "This script only works on Ubuntu 20 and above"
+    if [ "$(lsb_release -is)" == "Ubuntu" ] && [ "$version_info" -lt 22 ]; then
+      echo "This script only works on Ubuntu 22.04 and above"
       exit
     fi
   fi
@@ -121,7 +121,7 @@ wellcomeINSTALL() {
   echo -e "${GREEN}  9)XPanel v3.8.5"
   echo -e "${GREEN}  10)XPanel v3.7.9"
   echo -ne "${GREEN}\nSelect Version : ${ENDCOLOR}"
-  read n
+  read n < /dev/tty
   if [ "$n" != "" ]; then
     if [ "$n" == "1" ]; then
       linkd=https://api.github.com/repos/xpanel-cp/XPanel-SSH-User-Management/releases/tags/v4-0
@@ -161,7 +161,7 @@ wellcomeINSTALL() {
 userINPU() {
   echo -e "\nPlease input IP Server"
   printf "IP: "
-  read ip
+  read ip < /dev/tty
   if [ -n "$ip" -a "$ip" == " " ]; then
     echo -e "\nPlease input IP Server"
     printf "IP: "
@@ -171,7 +171,7 @@ userINPU() {
   adminusername=admin
   echo -e "\nPlease input Panel admin user."
   printf "Default user name is \e[33m${adminusername}\e[0m, leave it blank to use this user name: "
-  read usernametmp
+  read usernametmp < /dev/tty
   if [[ -n "${usernametmp}" ]]; then
     adminusername=${usernametmp}
   fi
@@ -209,7 +209,7 @@ userINPU() {
 
   echo -e "\nPlease input Panel admin password."
   printf "Randomly generated password is \e[33m${adminpassword}\e[0m, leave it blank to use this random password : "
-  read passwordtmp
+  read passwordtmp < /dev/tty
   if [[ -n "${passwordtmp}" ]]; then
     adminpassword=${passwordtmp}
   fi
@@ -248,7 +248,7 @@ startINSTALL() {
     sudo apt-get install nginx zip unzip net-tools mariadb-server -y
     sudo apt-get install php php-cli php-mbstring php-dom php-pdo php-mysql -y
     sudo apt-get install npm -y
-    sudo apt install python -y
+    sudo apt install python-is-python3 -y
     sudo apt install python3 -y
     sudo apt install iftop -y
     sudo apt install apt-transport-https -y
@@ -257,7 +257,7 @@ startINSTALL() {
     apt install git cmake -y
     apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl cron -y
     sudo apt install php8.1-fpm
-    sudo apt install php8.1 php8.1-cli php8.1-common php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl php8.1-simplexml -y
+    sudo apt install php8.1 php8.1-cli php8.1-common php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl -y
     wait
 
     phpv=$(php -v)
@@ -322,12 +322,28 @@ EOF
     sudo wget -O /var/www/html/update.zip $link
     sudo unzip -o /var/www/html/update.zip -d /var/www/html/ &
     wait
+
+    # Add the automatic remote-backup feature to the selected XPanel release.
+    FEATURE_RAW="https://raw.githubusercontent.com/MasoudJabbarian/XPanel-SSH-User-Management/v3.9.7-fixed"
+    sudo mkdir -p "/var/www/html/app/app/Console/Commands" "/var/www/html/app/app/Console" \
+      "/var/www/html/app/app/Http/Controllers" "/var/www/html/app/app/Models" \
+      "/var/www/html/app/database/migrations" "/var/www/html/app/resources/views/layouts" \
+      "/var/www/html/app/resources/views/settings"
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Console/Commands/BackupRemote.php" -o /var/www/html/app/app/Console/Commands/BackupRemote.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Http/Controllers/RemoteBackupController.php" -o /var/www/html/app/app/Http/Controllers/RemoteBackupController.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Console/Kernel.php" -o /var/www/html/app/app/Console/Kernel.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Models/Settings.php" -o /var/www/html/app/app/Models/Settings.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/database/migrations/2026_10_06_000001_add_remote_backup_settings.php" -o /var/www/html/app/database/migrations/2026_10_06_000001_add_remote_backup_settings.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/layouts/setting_menu.blade.php" -o /var/www/html/app/resources/views/layouts/setting_menu.blade.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/settings/remote-backup.blade.php" -o /var/www/html/app/resources/views/settings/remote-backup.blade.php
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/routes/web.php" -o /var/www/html/app/routes/web.php
+    wait
+
     sudo wget -4 -O /usr/local/bin/cronx https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronx
     chmod +x /usr/local/bin/cronx
     sudo wget -4 -O /usr/local/bin/cronxfixed https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronxfixed
     chmod +x /usr/local/bin/cronxfixed
-    sed -i 's@zend_extension = /usr/local/ioncube/ioncube_loader_lin_8.1.so@@' /etc/php/8.1/cli/php.ini
-    bash <(curl -Ls https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/ioncube.sh --ipv4)
+        bash <(curl -Ls https://raw.githubusercontent.com/MasoudJabbarian/XPanel-SSH-User-Management/v3.9.7-fixed/ioncube.sh --ipv4)
     wait
     echo 'www-data ALL=(ALL:ALL) NOPASSWD:/usr/local/bin/cronx' | sudo EDITOR='tee -a' visudo &
     wait
@@ -404,7 +420,7 @@ EOF
 
     echo -e "\nPlease input Panel admin Port, or leave blank to use randomly generated port"
     printf "Random port \033[33m$randomPort:\033[0m "
-    read porttmp
+    read porttmp < /dev/tty
     if [[ -n "${porttmp}" ]]; then
       #Get the server port number from my settings file
       serverPort=${porttmp}
@@ -423,7 +439,7 @@ EOF
     udpport=7300
     echo -e "\nPlease input UDPGW Port ."
     printf "Default Port is \e[33m${udpport}\e[0m, leave it blank to use this Port: "
-    read udpport
+    read udpport < /dev/tty
     sudo bash -c "$(curl -Ls https://raw.githubusercontent.com/xpanel-cp/Nethogs-Json-main/master/install.sh --ipv4)"
     git clone https://github.com/ambrop72/badvpn.git /root/badvpn
     mkdir /root/badvpn/badvpn-build
@@ -563,8 +579,6 @@ server {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
-        fastcgi_param IONCUBE "/usr/local/ioncube/ioncube_loader_lin_8.1.so";
-        fastcgi_param PHP_ADMIN_VALUE "zend_extension=/usr/local/ioncube/ioncube_loader_lin_8.1.so";
     }
     location ~ /\.ht {
         deny all;
@@ -572,6 +586,7 @@ server {
 }
 EOF
     sed -i "s/serverPort/$serverPort/g" /etc/nginx/sites-available/default
+    sed -i '/fastcgi_param[[:space:]]\+IONCUBE/d; /fastcgi_param[[:space:]]\+PHP_ADMIN_VALUE.*zend_extension.*ioncube/d' /etc/nginx/sites-available/default
     sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
     echo '#Xpanel' >/var/www/xpanelport
     sudo sed -i -e '$a\'$'\n''Xpanelport '$serverPort /var/www/xpanelport
@@ -688,7 +703,11 @@ moreCONFIG() {
   sed -i "s/PORT_SSH=.*/PORT_SSH=$port/g" /var/www/html/app/.env
   sed -i "s/PORT_UDPGW=.*/PORT_UDPGW=$udpport/g" /var/www/html/app/.env
   sudo chown -R www-data:www-data /var/www/html/app
+  sudo mkdir -p /var/www/html/app/storage /var/www/html/app/bootstrap/cache
+  sudo chown -R www-data:www-data /var/www/html/app/storage /var/www/html/app/bootstrap/cache
+  sudo chmod -R ug+rwX /var/www/html/app/storage /var/www/html/app/bootstrap/cache
   crontab -r
+  (crontab -l 2>/dev/null | grep -v "artisan schedule:run"; echo "* * * * * cd /var/www/html/app && php artisan schedule:run >> /dev/null 2>&1") | crontab -
   wait
 
   multiin=$(echo "$protcohttp://${defdomain}:$sshttp/fixer/multiuser")
