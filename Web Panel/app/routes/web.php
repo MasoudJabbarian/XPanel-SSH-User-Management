@@ -142,7 +142,7 @@ Route::prefix('api')->group(function()
     //Route::post('/sync/usercheck',[ApiController::class,'sync_check'])->name('sync.user.check');
     //Route::get('/sync/getuser/{user}/{pass}',[ApiController::class,'sync_user'])->name('sync.user.check');
 });
-Route::prefix('fixer')->group(function() {
+Route::prefix('fixer')->middleware('auth:admins')->group(function() {
     Route::get('/exp', [FixerController::class, 'cronexp'])->name('exp');
     Route::get('/multiuser', [FixerController::class, 'multiuser'])->name('multiuser');
     Route::get('/other', [FixerController::class, 'other'])->name('other');
