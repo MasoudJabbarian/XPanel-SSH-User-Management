@@ -40,7 +40,10 @@ class UserController extends Controller
 
     private function activateSystemUser(Users $user): void
     {
-        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $user->username, $user->password, (string) max(0, (int) $user->multiuser)]);
+        $result = Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $user->username, $user->password, (string) max(0, (int) $user->multiuser)]);
+        if (!$result->successful()) {
+            throw new \RuntimeException('Unable to provision Linux SSH user.');
+        }
         if (env('STATUS_LOG', 'deactive') === 'active') {
             Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'banner', $user->username]);
         }
