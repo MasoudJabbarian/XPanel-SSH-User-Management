@@ -30,7 +30,7 @@
                                 <a href="#" class="btn btn-primary d-inline-flex align-items-center"
                                    style="margin-bottom: 5px;" data-bs-toggle="modal" data-bs-target="#customer_add-modal">
                                     <i class="ti ti-plus f-18"></i>{{__('manager-newuser')}}
-                                </button></form>
+                                </a>
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-hover" id="pc-dt-simple">
@@ -80,9 +80,9 @@
                                                     <li class="list-inline-item align-bottom" >
                                                         <button class="avtar avtar-xs btn-link-success btn-pc-default" style="border:none" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="ti ti-adjustments f-18"></i></button>
                                                         <div class="dropdown-menu">
-                                                            <form method="POST" action="{{ route('admin.active', ['username' => $admin->username]) }}" class="d-inline">@csrf<button type="submit" class="dropdown-item border-0 bg-transparent">{{__('manager-active')}}</button></form>
-                                                            <form method="POST" action="{{ route('admin.deactive', ['username' => $admin->username]) }}" class="d-inline">@csrf<button type="submit" class="dropdown-item border-0 bg-transparent">{{__('manager-deactive')}}</button></form>
-                                                            <form method="POST" action="{{ route('admin.delete', ['username' => $admin->username]) }}" class="d-inline">@csrf<button type="submit" class="dropdown-item border-0 bg-transparent">{{__('manager-delete')}}</button></form>
+                                                            <form method="POST" action="{{ route('admin.active', ['username' => $admin->username]) }}" class="d-inline">@csrf<button type="submit" class="dropdown-item border-0 bg-transparent">{{__('manager-active')}}</a>
+                                                            <form method="POST" action="{{ route('admin.deactive', ['username' => $admin->username]) }}" class="d-inline">@csrf<button type="submit" class="dropdown-item border-0 bg-transparent">{{__('manager-deactive')}}</a>
+                                                            <form method="POST" action="{{ route('admin.delete', ['username' => $admin->username]) }}" class="d-inline">@csrf<button type="submit" class="dropdown-item border-0 bg-transparent">{{__('manager-delete')}}</a>
                                                         </div>
                                                     </li>
                                                     <li class="list-inline-item align-bottom" data-bs-toggle="tooltip"
@@ -90,7 +90,7 @@
                                                         <a href="{{ route('admin.edit', ['username' => $admin->username]) }}"
                                                            class="avtar avtar-xs btn-link-success btn-pc-default">
                                                             <i class="ti ti-edit-circle f-18"></i>
-                                                        </button></form>
+                                                        </a>
                                                     </li>
 
                                                 </ul>
@@ -116,7 +116,7 @@
                     <h5 class="mb-0">{{__('manager-newuser')}}</h5>
                     <a href="#" class="avtar avtar-s btn-link-danger btn-pc-default" data-bs-dismiss="modal">
                         <i class="ti ti-x f-20"></i>
-                    </button></form>
+                    </a>
                 </div>
                 <div class="modal-body">
                     <div class="row">
