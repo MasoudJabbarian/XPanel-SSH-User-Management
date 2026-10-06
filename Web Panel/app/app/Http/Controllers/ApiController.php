@@ -75,7 +75,7 @@ class ApiController extends Controller
             'referral'=>'','desc'=>$request->desc
         ]);
         Traffic::create(['username'=>$username,'download'=>0,'upload'=>0,'total'=>0]);
-        Process::run(['sudo','/usr/local/sbin/xpanel-userctl','add',$username,$request->password,(string)$request->multiuser]);
+        Process::input($request->password . "\n")->run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $username, (string) $request->multiuser]);
         return response()->json(['message'=>'User created','user'=>$user], 201);
     }
 
@@ -101,7 +101,7 @@ class ApiController extends Controller
         if($request->filled('status'))$data['status']=$request->status;
         $user->update($data);
         if($user->status==='active'){
-            Process::run(['sudo','/usr/local/sbin/xpanel-userctl','add',$user->username,$user->password,(string)$user->multiuser]);
+            Process::input($user->password . "\n")->run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $user->username, (string) $user->multiuser]);
         }else{
             Process::run(['sudo','/usr/local/sbin/xpanel-userctl','kill-user',$user->username]);
         }
@@ -121,7 +121,7 @@ class ApiController extends Controller
     {
         $this->token($request); $request->validate(['username'=>'required|string']); $user=$this->user($request->username);
         $user->update(['status'=>'active']);
-        Process::run(['sudo','/usr/local/sbin/xpanel-userctl','add',$user->username,$user->password,(string)$user->multiuser]);
+        Process::input($user->password . "\n")->run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $user->username, (string) $user->multiuser]);
         return response()->json(['message'=>'User activated']);
     }
 
@@ -146,7 +146,7 @@ class ApiController extends Controller
         $this->token($request); $request->validate(['username'=>'required|string','days'=>'required|integer|min:1|max:3650']);
         $user=$this->user($request->username); $base=$user->end_date && now()->lt($user->end_date)?$user->end_date:now();
         $user->update(['end_date'=>\Carbon\Carbon::parse($base)->addDays((int)$request->days)->toDateString(),'status'=>'active']);
-        Process::run(['sudo','/usr/local/sbin/xpanel-userctl','add',$user->username,$user->password,(string)$user->multiuser]);
+        Process::input($user->password . "\n")->run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $user->username, (string) $user->multiuser]);
         return response()->json(['message'=>'User renewed','end_date'=>$user->end_date]);
     }
 
