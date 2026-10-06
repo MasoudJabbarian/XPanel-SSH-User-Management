@@ -293,11 +293,9 @@ websiteaddress, PHP_URL_HOST);
                     fwrite($file, $modifiedContent);
                 }
                 fclose($file);
-                Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
             }
-            Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $user->username]);
-            Process::input($user->password."\n".$user->password."\n")->timeout(120)->run(['sudo', 'passwd', $user->username]);
-            Process::run(['sudo', 'xp_user_limit', 'add', $user->username, (string) $request->multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$user->username, \$user->password, (string) \$request->multiuser]);
             DB::commit();
         }
         if (!empty($request->email) && $request->email !== null && env('MAIL_STATUS')== 'on')
@@ -419,11 +417,9 @@ websiteaddress, PHP_URL_HOST);
                         fwrite($file, $modifiedContent);
                     }
                     fclose($file);
-                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                 }
-                Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $user->username]);
-                Process::input($user->password."\n".$user->password."\n")->timeout(120)->run(['sudo', 'passwd', $user->username]);
-                Process::run(['sudo', 'xp_user_limit', 'add', $user->username, (string) $request->multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$user->username, \$user->password, (string) \$request->multiuser]);
                 DB::commit();
 
             }
@@ -443,11 +439,9 @@ websiteaddress, PHP_URL_HOST);
                         fwrite($file, $modifiedContent);
                     }
                     fclose($file);
-                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                 }
-                Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
-                Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
-                Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
             }
         }
         else{
@@ -472,11 +466,9 @@ websiteaddress, PHP_URL_HOST);
                         fwrite($file, $modifiedContent);
                     }
                     fclose($file);
-                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                 }
-                Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
-                Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
-                Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
             }
         }
 
@@ -526,18 +518,13 @@ websiteaddress, PHP_URL_HOST);
                     }
                     file_put_contents($filename, implode('', $newFileContent));
 
-                    Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
 
                 }
                 Users::where('username', $username)->update(['status' => 'deactive']);
-                Process::run(['sudo', 'killall', '-u', $username]);
-                Process::run(['sudo', 'pkill', '-u', $username]);
-                Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
-                Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
-                Process::run(['sudo', 'userdel', '-r', $username]);
-                Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-            }
+                Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $username]);
+                Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $username]);
+                }
         }
         else{
             $check_user = Users::where('username', $username)->where('customer_user', $user->username)->count();
@@ -553,17 +540,12 @@ websiteaddress, PHP_URL_HOST);
                         }
                     }
                     file_put_contents($filename, implode('', $newFileContent));
-                    Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                 }
                 Users::where('username', $username)->update(['status' => 'deactive']);
-                Process::run(['sudo', 'killall', '-u', $username]);
-                Process::run(['sudo', 'pkill', '-u', $username]);
-                Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
-                Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
-                Process::run(['sudo', 'userdel', '-r', $username]);
-                Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-            }
+                Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $username]);
+                Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $username]);
+                }
         }
         return redirect()->back()->with('success', 'Deactivated');
 
@@ -600,27 +582,21 @@ websiteaddress, PHP_URL_HOST);
                         }
                     }
                     file_put_contents($filename, implode('', $newFileContent));
-                    Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                 }
                 if($status_user[0]->status=='active') {
-                    Process::run(['sudo', 'killall', '-u', $username]);
-                    Process::run(['sudo', 'pkill', '-u', $username]);
-                    Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
-                    Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
-                    $userdelProcess = Process::run(['sudo', 'userdel', '-r', $username]);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $username]);
+                    $userdelProcess = Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $username]);
                     if ($userdelProcess->successful()) {
                         Users::where('username', $username)->delete();
                         Traffic::where('username', $username)->delete();
-                        Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-                    }
+                        }
                 }
                 else
                 {
                     Users::where('username', $username)->delete();
                     Traffic::where('username', $username)->delete();
-                    Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-                }
+                    }
             }
         }
         else {
@@ -638,27 +614,21 @@ websiteaddress, PHP_URL_HOST);
                         }
                     }
                     file_put_contents($filename, implode('', $newFileContent));
-                    Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                 }
                 if ($status_user[0]->status == 'active') {
-                    Process::run(['sudo', 'killall', '-u', $username]);
-                    Process::run(['sudo', 'pkill', '-u', $username]);
-                    Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
-                    Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
-                    $userdelProcess = Process::run(['sudo', 'userdel', '-r', $username]);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $username]);
+                    $userdelProcess = Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $username]);
                     if ($userdelProcess->successful()) {
                         Users::where('username', $username)->delete();
                         Traffic::where('username', $username)->delete();
-                        Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-                    }
+                        }
                 }
                 else
                 {
                     Users::where('username', $username)->delete();
                     Traffic::where('username', $username)->delete();
-                    Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-                }
+                    }
             }
         }
         return redirect()->back()->with('success', 'Deleted');
@@ -685,24 +655,18 @@ websiteaddress, PHP_URL_HOST);
                                 }
                             }
                             file_put_contents($filename, implode('', $newFileContent));
-                            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                        }
+                            }
                         if ($status_user[0]->status == 'active') {
-                            Process::run(['sudo', 'killall', '-u', $username]);
-                            Process::run(['sudo', 'pkill', '-u', $username]);
-                            Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
-                            Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
-                            $userdelProcess = Process::run(['sudo', 'userdel', '-r', $username]);
+                            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $username]);
+                            $userdelProcess = Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $username]);
                             if ($userdelProcess->successful()) {
                                 Users::where('username', $username)->delete();
                                 Traffic::where('username', $username)->delete();
-                                Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-                            }
+                                }
                         } else {
                             Users::where('username', $username)->delete();
                             Traffic::where('username', $username)->delete();
-                            Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-                        }
+                            }
                     }
                     if($request->action=='active') {
 
@@ -725,11 +689,9 @@ websiteaddress, PHP_URL_HOST);
                                 fwrite($file, $modifiedContent);
                             }
                             fclose($file);
-                            Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                         }
-                        Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
-                        Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
-                        Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
                     }
                     if($request->action=='deactive') {
                         if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
@@ -744,22 +706,16 @@ websiteaddress, PHP_URL_HOST);
                             }
                             file_put_contents($filename, implode('', $newFileContent));
 
-                            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                            Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                         }
                         Users::where('username', $username)->update(['status' => 'deactive']);
-                        Process::run(['sudo', 'killall', '-u', $username]);
-                        Process::run(['sudo', 'pkill', '-u', $username]);
-                        Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
-                        Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
-                        Process::run(['sudo', 'userdel', '-r', $username]);
-                        Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-                    }
+                        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $username]);
+                        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $username]);
+                        }
                     if($request->action=='retraffic') {
                         Traffic::where('username', $username)->update(['download' => '0', 'upload' => '0', 'total' => '0']);
                         if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
-                            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                        }
+                            }
                     }
                 }
             }
@@ -781,24 +737,18 @@ websiteaddress, PHP_URL_HOST);
                                 }
                             }
                             file_put_contents($filename, implode('', $newFileContent));
-                            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                        }
+                            }
                         if ($status_user[0]->status == 'active') {
-                            Process::run(['sudo', 'killall', '-u', $username]);
-                            Process::run(['sudo', 'pkill', '-u', $username]);
-                            Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
-                            Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
-                            $userdelProcess = Process::run(['sudo', 'userdel', '-r', $username]);
+                            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $username]);
+                            $userdelProcess = Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $username]);
                             if ($userdelProcess->successful()) {
                                 Users::where('username', $username)->delete();
                                 Traffic::where('username', $username)->delete();
-                                Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-                            }
+                                }
                         } else {
                             Users::where('username', $username)->delete();
                             Traffic::where('username', $username)->delete();
-                            Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-                        }
+                            }
                     }
                     if($request->action=='active') {
 
@@ -821,11 +771,9 @@ websiteaddress, PHP_URL_HOST);
                                 fwrite($file, $modifiedContent);
                             }
                             fclose($file);
-                            Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                         }
-                        Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
-                        Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
-                        Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
                     }
                     if($request->action=='deactive') {
                         if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
@@ -840,27 +788,21 @@ websiteaddress, PHP_URL_HOST);
                             }
                             file_put_contents($filename, implode('', $newFileContent));
 
-                            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                            Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                         }
                         Users::where('username', $username)->update(['status' => 'deactive']);
-                        Process::run(['sudo', 'killall', '-u', $username]);
-                        Process::run(['sudo', 'pkill', '-u', $username]);
-                        Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
-                        Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
-                        Process::run(['sudo', 'userdel', '-r', $username]);
-                        Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-                    }
+                        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $username]);
+                        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $username]);
+                        }
                     if($request->action=='retraffic') {
                         Traffic::where('username', $username)->update(['download' => '0', 'upload' => '0', 'total' => '0']);
                         if (file_exists("/var/www/html/app/storage/banner/{$username}-detail")) {
-                            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                        }
+                            }
                     }
                 }
             }
         }
-        Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
         return redirect()->back()->with('success', 'Deleted');
     }
     public function renew_bulk(Request $request)
@@ -892,7 +834,7 @@ websiteaddress, PHP_URL_HOST);
                             fwrite($file, $modifiedContent);
                         }
                         fclose($file);
-                        Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                     }
                     Users::where('username', $username)->update(['status' => 'active', 'end_date' => $newdate]);
 
@@ -900,9 +842,7 @@ websiteaddress, PHP_URL_HOST);
                     $username=$user[0]->username;
                     $password=$user[0]->password;
                     $multiuser=$user[0]->multiuser;
-                    Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
-                    Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
-                    Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
                     if ($request->re_date == 'yes') {
                         Users::where('username', $username)->update(['start_date' => date("Y-m-d")]);
                     }
@@ -930,7 +870,7 @@ websiteaddress, PHP_URL_HOST);
                             fwrite($file, $modifiedContent);
                         }
                         fclose($file);
-                        Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                     }
                     Users::where('username', $username)->update(['status' => 'active', 'end_date' => $newdate]);
 
@@ -938,9 +878,7 @@ websiteaddress, PHP_URL_HOST);
                     $username=$user[0]->username;
                     $password=$user[0]->password;
                     $multiuser=$user[0]->multiuser;
-                    Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
-                    Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
-                    Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
                     if ($request->re_date == 'yes') {
                         Users::where('username', $username)->update(['start_date' => date("Y-m-d")]);
 
@@ -952,7 +890,7 @@ websiteaddress, PHP_URL_HOST);
                 }
             }
         }
-        Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
         return redirect()->back()->with('success', 'Deleted');
     }
 ired|numeric',
@@ -1052,7 +990,7 @@ ired|numeric',
                         fwrite($file, $modifiedContent);
                     }
                     fclose($file);
-                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                 }
                 Users::where('username', $request->username_re)->update(['status' => 'active', 'end_date' => $newdate]);
 
@@ -1060,9 +998,7 @@ ired|numeric',
                 $username=$user[0]->username;
                 $password=$user[0]->password;
                 $multiuser=$user[0]->multiuser;
-                Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
-                Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
-                Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
                 if ($request->re_date == 'yes') {
                     Users::where('username', $request->username_re)->update(['start_date' => date("Y-m-d")]);
                 }
@@ -1090,7 +1026,7 @@ ired|numeric',
                         fwrite($file, $modifiedContent);
                     }
                     fclose($file);
-                    Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
                 }
                 Users::where('username', $request->username_re)->update(['status' => 'active', 'end_date' => $newdate]);
 
@@ -1098,9 +1034,7 @@ ired|numeric',
                 $username=$user[0]->username;
                 $password=$user[0]->password;
                 $multiuser=$user[0]->multiuser;
-                Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $username]);
-                Process::input($password."\n".$password."\n")->timeout(120)->run(['sudo', 'passwd', $username]);
-                Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$username, \$password, (string) \$multiuser]);
                 if ($request->re_date == 'yes') {
                     Users::where('username', $request->username_re)->update(['start_date' => date("Y-m-d")]);
 
@@ -1368,17 +1302,11 @@ ed|numeric',
                         'desc' => $request->desc
                     ]);
                 if ($request->activate == "active") {
-                    Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $request->username]);
-                    Process::input($request->password."\n".$request->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
-                    Process::run(['sudo', 'xp_user_limit', 'add', $request->username, (string) $request->multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$request->username, \$request->password, (string) \$request->multiuser]);
                 } else {
-                    Process::run(['sudo', 'killall', '-u', $request->username]);
-                    Process::run(['sudo', 'pkill', '-u', $request->username]);
-                    Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $request->username]);
-                    Process::run(['sudo', 'timeout', '10', 'killall', '-u', $request->username]);
-                    Process::run(['sudo', 'userdel', '-r', $request->username]);
-                    Process::run(['sudo', 'xp_user_limit', 'del', $request->username, (string) $request->multiuser]);
-                }
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $request->username]);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $request->username]);
+                    }
                 if ($username[0]->password != $request->password) {
                     Process::input($request->password."\n".$request->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
                 }
@@ -1400,35 +1328,24 @@ ed|numeric',
                         'desc' => $request->desc
                     ]);
                 if ($request->activate == "active") {
-                    Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $request->username]);
-                    Process::input($request->password."\n".$request->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
-                    Process::run(['sudo', 'xp_user_limit', 'add', $request->username, (string) $request->multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', \$request->username, \$request->password, (string) \$request->multiuser]);
                 } else {
-                    Process::run(['sudo', 'killall', '-u', $request->username]);
-                    Process::run(['sudo', 'pkill', '-u', $request->username]);
-                    Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $request->username]);
-                    Process::run(['sudo', 'timeout', '10', 'killall', '-u', $request->username]);
-                    Process::run(['sudo', 'userdel', '-r', $request->username]);
-                    Process::run(['sudo', 'xp_user_limit', 'del', $request->username, (string) $request->multiuser]);
-                }
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $request->username]);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $request->username]);
+                    }
                 if ($user->password != $request->password) {
                     Process::input($request->password."\n".$request->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
-                    Process::run(['sudo', 'xp_user_limit', 'add', $request->username, (string) $request->multiuser]);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'limit', $request->username, (string) $request->multiuser]);
                 }
             }
         }
         return redirect()->back()->with('success', 'Update Success');
     }
-            Process::run(['sudo', 'rm', '-rf', "/var/www/html/app/storage/banner/{$username}-detail"]);
-                Process::run(['sudo', 'systemctl', 'reload', 'ssh.service']);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
             }
-            Process::run(['sudo', 'killall', '-u', $username]);
-            Process::run(['sudo', 'pkill', '-u', $username]);
-            Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $username]);
-            Process::run(['sudo', 'timeout', '10', 'killall', '-u', $username]);
-            Process::run(['sudo', 'userdel', '-r', $username]);
-            Process::run(['sudo', 'xp_user_limit', 'del', $username, (string) $multiuser]);
-        }
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $username]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'delete', $username]);
+            }
         DB::table('users')->truncate();
         DB::table('traffic')->truncate();
 
@@ -1465,7 +1382,7 @@ ed|numeric',
             $process2->setTimeout(120);
             $process2->start();
             $processes[] = $process2;
-            Process::run(['sudo', 'xp_user_limit', 'add', $username, (string) $multiuser]);
+            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'limit', $username, (string) $multiuser]);
         }
 
         foreach ($processes as $process) {
