@@ -5,13 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Fixer;
 use App\Models\Settings;
 use App\Models\Traffic;
-use App\Models\Trafficsb;
 use App\Models\Users;
-use App\Models\Singbox;
 use App\Models\LogConnection;
-use App\Models\Xguard;
-use App\Models\Ipadapter;
-use App\Models\Adapterlist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
@@ -39,7 +34,6 @@ class FixerController extends Controller
             }
         }
         $users = Users::where('status', 'active')->get();
-        $users_sb = Singbox::where('status', 'active')->get();
         $activeUserCount = Users::where('status', 'active')->count();
         foreach ($users as $us) {
             if (!empty($us->end_date)) {
@@ -105,23 +99,6 @@ class FixerController extends Controller
             }
 
         }
-        foreach ($users_sb as $us)
-        {
-            if (!empty($us->end_date)) {
-                $expiredate = strtotime(date("Y-m-d", strtotime($us->end_date)));
-                if ($expiredate < strtotime(date("Y-m-d")) || $expiredate == strtotime(date("Y-m-d"))) {
-                    $validatedData = [
-                        'port'=>$us->port_sb
-                    ];
-
-                    ProController::deactive_singbox($validatedData);
-                    Singbox::where('id', $us->id)
-                        ->update(['status' => 'expired']);
-                }
-            }
-        }
-    }
-
     public function multiuser()
     {
         $setting = Settings::first();
@@ -141,33 +118,6 @@ class FixerController extends Controller
         }
 
         // Read JSON file
-        $list_drop = Process::run("sudo lsof -i :" . env('PORT_DROPBEAR') . " -n | grep ESTABLISHED");
-        $output_drop = $list_drop->output();
-        $onlineuserlist_drop = preg_split("/\r\n|\n|\r/", $output_drop);
-        $jsonFilePath = '/var/www/html/app/storage/dropbear.json';
-
-        if (file_exists($jsonFilePath)) {
-            $jsonData = file_get_contents($jsonFilePath);
-            $dataArray = json_decode($jsonData, true);
-
-            foreach ($onlineuserlist_drop as $user) {
-                $user = preg_replace('/\s+/', ' ', $user);
-                $userarray = explode(" ", $user);
-                $pid = $userarray[1] ?? null;
-
-                // Check if the PID is in the JSON data
-                $userFound = false;
-                foreach ($dataArray as $item) {
-                    if ($item['PID'] === $pid) {
-                        $userFound = true;
-                        $onlinelist[] = $item['user'];
-                        break;
-                    }
-                }
-            }
-        }
-        // Remove duplicates
-        $onlinelist = array_replace($onlinelist, array_fill_keys(array_keys($onlinelist, null), ''));
         $onlinecount = array_count_values($onlinelist);
         $onlinelist_uniq = array_unique($onlinelist);
         $allUsersCO = LogConnection::pluck('username')->toArray();
@@ -231,33 +181,8 @@ class FixerController extends Controller
             $this->cronexp_traffic();
             $this->synstraffics_drop();
         }
-        $this->trafiic_end_sb();
     }
-    public function trafiic_end_sb()
-    {
-        $users_sb = Singbox::where('status', 'active')->get();
-        foreach ($users_sb as $us)
-        {
-            $traffic = Trafficsb::where('port_sb', $us->port_sb)->get();
-            foreach ($traffic as $usernamet) {
-                $total = $usernamet->total_sb;
-                if($total>0 and empty($us->start_date) and !empty($us->date_one_connect))
-                {
-                    $end_inp = now()->addDays($us->date_one_connect)->toDateString();
-                    $start_inp = now()->toDateString();
-                    Singbox::where('port_sb', $us->port_sb)->update(['start_date' => $start_inp, 'end_date' => $end_inp]);
-                }
-                if ($us->traffic < $total && !empty($us->traffic) && $us->traffic > 0) {
-                    $validatedData = [
-                        'port'=>$us->port_sb
-                    ];
 
-                    ProController::deactive_singbox($validatedData);
-                    Singbox::where('port_sb', $us->port_sb)->update(['status' => 'traffic']);
-                }
-            }
-        }
-    }
     public function cronexp_traffic()
     {
         $inactiveUsers = Users::where('status', '!=', 'active')->get();
