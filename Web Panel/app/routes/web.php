@@ -42,13 +42,13 @@ Route::prefix("$panel")->group(function()
     Route::get('/users/qr/{data}',[UserController::class,'generateQRCode'])->name('qrimg');
     Route::post('/users',[UserController::class,'newuser'])->name('new.user');
     Route::post('/users/bulk',[UserController::class,'bulkuser'])->name('new.bulkuser');
-    Route::get('/user/active/{username}',[UserController::class,'activeuser'])->name('user.active');
-    Route::get('/user/deactive/{username}',[UserController::class,'deactiveuser'])->name('user.deactive');
-    Route::get('/user/reset/{username}',[UserController::class,'reset_traffic'])->name('user.reset');
-    Route::get('/user/delete/{username}',[UserController::class,'delete'])->name('user.delete');
+    Route::post('/user/active/{username}',[UserController::class,'activeuser'])->name('user.active');
+    Route::post('/user/deactive/{username}',[UserController::class,'deactiveuser'])->name('user.deactive');
+    Route::post('/user/reset/{username}',[UserController::class,'reset_traffic'])->name('user.reset');
+    Route::post('/user/delete/{username}',[UserController::class,'delete'])->name('user.delete');
 
 
-    Route::get('/user/all/delete',[UserController::class,'user_all_delete'])->name('user.all.delete');
+    Route::post('/user/all/delete',[UserController::class,'user_all_delete'])->name('user.all.delete');
     Route::post('/user/action/bulk',[UserController::class,'delete_bulk'])->name('user.action.bulk');
     Route::post('/user/renewal',[UserController::class,'renewal'])->name('new.renewal');
     Route::post('/user/renewal/bulk',[UserController::class,'renew_bulk'])->name('new.renewal.bulk');
@@ -64,18 +64,14 @@ Route::prefix("$panel")->group(function()
     Route::get('/settings/lang/{name}',[SettingsController::class,'lang'])->name('lang');
     Route::post('/settings/general',[SettingsController::class,'update_general'])->name('settings.general');
     Route::post('/settings/change/port/ssh',[SettingsController::class,'change_port_ssh'])->name('settings.change.port.ssh');
-    Route::post('/settings/change/port/sshtls',[SettingsController::class,'change_port_ssh_tls'])->name('settings.change.port.ssh.tls');
-    Route::post('/settings/user',[SettingsController::class,'update_multiuser'])->name('settings.multiuser');
-    Route::post('/settings/backup',[SettingsController::class,'import_old'])->name('settings.backup.old');
     Route::post('/settings/backup/new',[SettingsController::class,'upload_backup'])->name('settings.backup.upload');
     Route::post('/settings/backup/delete/{name}',[SettingsController::class,'delete_backup'])->name('settings.backup.delete');
     Route::post('/settings/backup/restore/{name}',[SettingsController::class,'restore_backup'])->name('settings.backup.restore');
     Route::post('/settings/backup/make/',[SettingsController::class,'make_backup'])->name('settings.backup.make');
-    Route::post('/settings/backup/bot/',[SettingsController::class,'bot_backup_up'])->name('settings.backup.bot.up');
     Route::get('/settings/backup/dl/{name}',[SettingsController::class,'download_backup'])->name('settings.backup.dl');
     Route::post('/settings/api',[SettingsController::class,'insert_api'])->name('settings.api');
-    Route::get('/settings/api/renew/{id}',[SettingsController::class,'renew_api'])->name('settings.token.renew');
-    Route::get('/settings/api/delete/{id}',[SettingsController::class,'delete_api'])->name('settings.token.delete');
+    Route::post('/settings/api/renew/{id}',[SettingsController::class,'renew_api'])->name('settings.token.renew');
+    Route::post('/settings/api/delete/{id}',[SettingsController::class,'delete_api'])->name('settings.token.delete');
     Route::get('/managers',[AdminsController::class,'index'])->name('admins');
     Route::post('/managers',[AdminsController::class,'insert'])->name('admin.new');
     Route::get('/managers/active/{username}',[AdminsController::class,'activeadmin'])->name('admin.active');
