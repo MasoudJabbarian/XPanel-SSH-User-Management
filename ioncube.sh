@@ -20,16 +20,17 @@ ZEND_EXTENSION_PATH="/usr/local/ioncube/ioncube_loader_lin_${PHPVERSION}.so"
 
 mkdir -p "${PHP_FPM_DIR}/conf.d" "${PHP_CLI_DIR}/conf.d"
 
+# Remove any stale ionCube entries from php.ini and conf.d first. This also
+# cleans old/broken paths such as ioncube_loader_lin_8.1..so.
+for ini in "${PHP_FPM_DIR}/php.ini" "${PHP_CLI_DIR}/php.ini" "${PHP_FPM_DIR}/conf.d/"*.ini "${PHP_CLI_DIR}/conf.d/"*.ini; do
+  if [ -f "$ini" ]; then
+    sed -i '/^[[:space:]]*zend_extension[[:space:]]*=.*ioncube_loader_lin_/d' "$ini"
+  fi
+done
+
+# Write one canonical loader entry for each PHP SAPI.
 echo "zend_extension = ${ZEND_EXTENSION_PATH}" > "${PHP_FPM_DIR}/conf.d/00-ioncube.ini"
 echo "zend_extension = ${ZEND_EXTENSION_PATH}" > "${PHP_CLI_DIR}/conf.d/00-ioncube.ini"
-
-# Remove old ionCube entries from main php.ini files to prevent duplicate loading.
-if [ -f "${PHP_FPM_DIR}/php.ini" ]; then
-  sed -i '/^[[:space:]]*zend_extension[[:space:]]*=.*ioncube_loader_lin_/d' "${PHP_FPM_DIR}/php.ini"
-fi
-if [ -f "${PHP_CLI_DIR}/php.ini" ]; then
-  sed -i '/^[[:space:]]*zend_extension[[:space:]]*=.*ioncube_loader_lin_/d' "${PHP_CLI_DIR}/php.ini"
-fi
 
 systemctl restart "php${PHPVERSION}-fpm"
 systemctl restart nginx
