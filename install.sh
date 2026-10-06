@@ -90,6 +90,7 @@ foreach ($values as $k => $val) {
 file_put_contents($p, $v, LOCK_EX);
 ' "$APP_DIR/.env" "$DB_PASSWORD" "$PANEL_ADMIN_USERNAME" "$PANEL_ADMIN_PASSWORD" "$PORT_SSH"
 cd "$APP_DIR"
+composer install --no-dev --prefer-dist --optimize-autoloader
 php artisan key:generate --force
 php artisan migrate --force
 php artisan storage:link || true
