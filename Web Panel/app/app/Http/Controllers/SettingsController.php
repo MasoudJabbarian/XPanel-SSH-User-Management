@@ -74,7 +74,7 @@ class SettingsController extends Controller
         }
         if($name=='night' OR $name=='light')
         {
-            Process::run("sed -i \"s/APP_MODE=.*/APP_MODE=$name/g\" /var/www/html/app/.env");
+            $this->setEnvValue('APP_MODE', $name);;
         }
         return redirect()->back()->with('success', 'success');
     }
@@ -86,7 +86,7 @@ class SettingsController extends Controller
         }
         if($name=='fa' OR $name=='en' OR $name=='ru')
         {
-            Process::run("sed -i \"s/APP_LOCALE=.*/APP_LOCALE=$name/g\" /var/www/html/app/.env");
+            $this->setEnvValue('APP_LOCALE', $name);;
         }
 
         return redirect()->back()->with('success', 'success');
@@ -296,14 +296,14 @@ class SettingsController extends Controller
         file_put_contents('/var/www/html/app/.env', $newContents);
         if($request->lang=='fa' OR $request->lang=='en' OR $request->lang=='ru')
         {
-            Process::run("sed -i \"s/APP_LOCALE=.*/APP_LOCALE=$request->lang/g\" /var/www/html/app/.env");
+            $this->setEnvValue('APP_LOCALE', $request->lang);;
         }
         if($request->mode=='night' OR $request->mode=='light')
         {
-            Process::run("sed -i \"s/APP_MODE=.*/APP_MODE=$request->mode/g\" /var/www/html/app/.env");
+            $this->setEnvValue('APP_MODE', $request->mode);;
         }
 
-        Process::run("sed -i \"s/PANEL_DIRECT=.*/PANEL_DIRECT=$request->direct_login/g\" /var/www/html/app/.env");
+        $this->setEnvValue('PANEL_DIRECT', $request->direct_login);;
         if (empty($request->status_day) or $request->status_day=='deactive')
         {
             $status_day='deactive';
@@ -347,10 +347,10 @@ class SettingsController extends Controller
         {
             $anti_user='active';
         }
-        Process::run("sed -i \"s/ANTI_USER=.*/ANTI_USER=$anti_user/g\" /var/www/html/app/.env");
-        Process::run("sed -i \"s/STATUS_LOG=.*/STATUS_LOG=$status_log/g\" /var/www/html/app/.env");
-        Process::run("sed -i \"s/CRON_TRAFFIC=.*/CRON_TRAFFIC=$status_traffic/g\" /var/www/html/app/.env");
-        Process::run("sed -i \"s/DAY=.*/DAY=$status_day/g\" /var/www/html/app/.env");
+        $this->setEnvValue('ANTI_USER', $anti_user);;
+        $this->setEnvValue('STATUS_LOG', $status_log);;
+        $this->setEnvValue('CRON_TRAFFIC', $status_traffic);;
+        $this->setEnvValue('DAY', $status_day);;
         $check_setting = Settings::where('id', '1')->count();
         if ($check_setting > 0) {
             Settings::where('id', 1)->update(['multiuser' => $status_multiuser]);
@@ -422,9 +422,9 @@ class SettingsController extends Controller
             }
             $current_time = time();
             //Process::run("sed -i \"s/BOT_LOG=.*/BOT_LOG=$current_time/g\" /var/www/html/app/.env");
-            Process::run("sed -i \"s/BOT_TOKEN=.*/BOT_TOKEN=$request->token_bot/g\" /var/www/html/app/.env");
-            Process::run("sed -i \"s/BOT_ID_ADMIN=.*/BOT_ID_ADMIN=$request->id_admin/g\" /var/www/html/app/.env");
-            Process::run("sed -i \"s/BOT_API_ACCESS=.*/BOT_API_ACCESS=$bot_api_access/g\" /var/www/html/app/.env");
+            $this->setEnvValue('BOT_TOKEN', $request->token_bot);;
+            $this->setEnvValue('BOT_ID_ADMIN', $request->id_admin);;
+            $this->setEnvValue('BOT_API_ACCESS', $bot_api_access);;
             sleep(1);
 
             $ch = curl_init($webhookUrl);
