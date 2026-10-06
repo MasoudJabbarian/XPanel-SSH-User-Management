@@ -53,7 +53,7 @@ checkOS() {
     exit 1
   fi
 
-  # This script only works on Ubuntu 20 and above
+  # This script only works on Ubuntu 22.04 and above
   if [ "$(uname)" == "Linux" ]; then
     version_info=$(lsb_release -rs | cut -d '.' -f 1)
     # Check if it's Ubuntu and version is below 20
@@ -166,7 +166,7 @@ userINPU() {
   if [ -n "$ip" -a "$ip" == " " ]; then
     echo -e "\nPlease input IP Server"
     printf "IP: "
-    read ip
+    read ip < /dev/tty
   fi
   clear
   adminusername=admin
