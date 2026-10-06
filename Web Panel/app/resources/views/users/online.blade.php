@@ -46,13 +46,13 @@
                                                         <form method="POST" action="{{ route('online.kill.pid', ['pid' => $val->pid]) }}" class="d-inline">@csrf<button type="submit"
                                                            class="btn btn-light-primary">
                                                             {{__('online-table-action-killid')}}
-                                                        </a>
+                                                        </button></form>
                                                     </li>
                                                     <li class="list-inline-item align-bottom">
                                                         <form method="POST" action="{{ route('online.kill.username', ['username' => $val->username]) }}" class="d-inline">@csrf<button type="submit"
                                                            class="btn btn-light-danger">
                                                             {{__('online-table-action-killu')}}
-                                                        </a>
+                                                        </button></form>
                                                     </li>
 
                                                 </ul>
