@@ -35,7 +35,7 @@ fi
 echo "[1/8] Installing Ubuntu packages..."
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y nginx mariadb-server openssh-server composer git unzip curl   php8.3-cli php8.3-fpm php8.3-mysql php8.3-mbstring php8.3-xml php8.3-curl   php8.3-zip php8.3-intl php8.3-opcache
+apt-get install -y nginx mariadb-server openssh-server composer git unzip curl openssl ca-certificates cron lsof nethogs php8.3-cli php8.3-fpm php8.3-mysql php8.3-mbstring php8.3-xml php8.3-curl   php8.3-zip php8.3-intl php8.3-opcache
 
 echo "[2/8] Installing application..."
 install -d -o root -g root -m 0755 /var/www/html
