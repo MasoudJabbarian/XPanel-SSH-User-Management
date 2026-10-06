@@ -34,7 +34,7 @@ class OnlineController extends Controller
         if (!is_numeric($pid)) {
             abort(400, 'Not Valid Username');
         }
-        Process::run(['sudo', 'kill', '-9', (string) $pid]);
+        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-pid', (string) $pid]);
         return redirect()->back()->with('success', 'Killed');
     }
 
@@ -44,7 +44,7 @@ class OnlineController extends Controller
         if (!is_string($username)) {
             abort(400, 'Not Valid Username');
         }
-        Process::run(['sudo', 'killall', '-u', $username]);
+        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $username]);
         return redirect()->back()->with('success', 'Killed');
     }
     public function index()
