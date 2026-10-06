@@ -32,15 +32,12 @@ jobs:
       shell: bash
       run: find . -type f -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
 
-    - name: Validate Python proxy syntax
-      run: python3 -m py_compile wss wssd
-
     - name: Validate shell scripts
       run: |
         sudo apt-get update
         sudo apt-get install -y shellcheck
-        bash -n install.sh ssl.sh ioncube.sh xp_user_limit.sh
-        shellcheck install.sh ssl.sh ioncube.sh xp_user_limit.sh
+        bash -n install.sh ssl.sh xp_user_limit.sh support/xpanel-userctl
+        shellcheck install.sh ssl.sh xp_user_limit.sh support/xpanel-userctl
 
     - name: Execute tests (Unit and Feature tests) via PHPUnit
       env:
