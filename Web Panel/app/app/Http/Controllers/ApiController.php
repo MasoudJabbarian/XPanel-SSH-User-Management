@@ -150,9 +150,9 @@ class ApiController extends Controller
         return response()->json(['message'=>'User renewed','end_date'=>$user->end_date]);
     }
 
-    public function traffic_user(Request $request): JsonResponse
+    public function traffic_user(Request $request, string $username): JsonResponse
     {
-        $this->token($request); $request->validate(['username'=>'required|string']); $user=$this->user($request->username);
+        $this->token($request); $user=$this->user($username);
         return response()->json(['quota'=>$user->traffic,'traffic'=>Traffic::where('username',$user->username)->first()]);
     }
 
