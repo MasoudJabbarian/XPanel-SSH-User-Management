@@ -14,6 +14,12 @@ use DateTime;
 
 class ApiController extends Controller
 {
+    private function assertLinuxUsername(string $username): void
+    {
+        if (!preg_match('/^[a-z_][a-z0-9_-]{0,31}$/', $username)) {
+            abort(422, 'Invalid Linux username');
+        }
+    }
 
     public function checktoken($token)
     {
@@ -63,7 +69,7 @@ class ApiController extends Controller
         $traffic='0';
         $request->validate([
             'token'=>'required|string',
-            'username'=>'required|string',
+            'username'=>'required|string|regex:/^[a-z_][a-z0-9_-]{0,31}$/',
             'password'=>'required|string',
             'email'=>'nullable|string',
             'mobile'=>'nullable|string',
@@ -75,7 +81,8 @@ class ApiController extends Controller
             'desc'=>'nullable|string'
         ]);
         $this->checktoken($request->token);
-        if($request->traffic>0)
+        $this->assertLinuxUsername($request->username);
+        if($request->traffic>0
         {$traffic=$request->traffic; }
         if (!empty($request->connection_start)) {
             $st_date = '';
@@ -113,9 +120,9 @@ class ApiController extends Controller
                 'total' => '0'
             ]);
 
-            Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$request->username}");
-            Process::input($request->password."\n".$request->password."\n")->timeout(120)->run("sudo passwd {$request->username}");
-            Process::run("sudo xp_user_limit add {$request->username} {$request->multiuser}");
+            Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $request->username]);
+            Process::input($request->password."\n".$request->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
+            Process::run(['sudo', 'xp_user_limit', 'add', $request->username, (string) $request->multiuser]);
 
             return response()->json(['message' => 'User Created']);
         }
@@ -129,24 +136,25 @@ class ApiController extends Controller
             'username' => 'required|string'
         ]);
         $this->checktoken($request->token);
+        $this->assertLinuxUsername($request->username);
         $check_user = Users::where('username', $request->username)->count();
         $status_user = Users::where('username',$request->username)->get();
         $multiuser=$status_user[0]->multiuser;
         if ($check_user > 0) {
             if ($status_user[0]->status == 'active') {
-                Process::run("sudo killall -u {$request->username}");
-                Process::run("sudo pkill -u {$request->username}");
-                Process::run("sudo timeout 10 pkill -u {$request->username}");
-                Process::run("sudo timeout 10 killall -u {$request->username}");
-                Process::run("sudo userdel -r {$request->username}");
-                Process::run("sudo xp_user_limit del {$request->username} {$multiuser}");
+                Process::run(['sudo', 'killall', '-u', $request->username]);
+                Process::run(['sudo', 'pkill', '-u', $request->username]);
+                Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $request->username]);
+                Process::run(['sudo', 'timeout', '10', 'killall', '-u', $request->username]);
+                Process::run(['sudo', 'userdel', '-r', $request->username]);
+                Process::run(['sudo', 'xp_user_limit', 'del', $request->username, (string) $multiuser]);
                 Users::where('username', $request->username)->delete();
                 Traffic::where('username', $request->username)->delete();
                 return response()->json(['message' => 'User Deleted']);
             } else {
                 Users::where('username', $request->username)->delete();
                 Traffic::where('username', $request->username)->delete();
-                Process::run("sudo xp_user_limit del {$request->username} {$multiuser}");
+                Process::run(['sudo', 'xp_user_limit', 'del', $request->username, (string) $multiuser]);
             }
         }
         else
@@ -231,20 +239,20 @@ class ApiController extends Controller
                     'desc' => $request->desc
                 ]);
             if ($request->activate == "active") {
-                Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$request->username}");
-                Process::input($request->password."\n".$request->password."\n")->timeout(120)->run("sudo passwd {$request->username}");
-                Process::run("sudo xp_user_limit del {$request->username} {$request->multiuser}");
+                Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $request->username]);
+                Process::input($request->password."\n".$request->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
+                Process::run(['sudo', 'xp_user_limit', 'del', $request->username, (string) $request->multiuser]);
             } else {
-                Process::run("sudo killall -u {$request->username}");
-                Process::run("sudo pkill -u {$request->username}");
-                Process::run("sudo timeout 10 pkill -u {$request->username}");
-                Process::run("sudo timeout 10 killall -u {$request->username}");
-                Process::run("sudo userdel -r {$request->username}");
-                Process::run("sudo xp_user_limit del {$request->username} {$request->multiuser}");
+                Process::run(['sudo', 'killall', '-u', $request->username]);
+                Process::run(['sudo', 'pkill', '-u', $request->username]);
+                Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $request->username]);
+                Process::run(['sudo', 'timeout', '10', 'killall', '-u', $request->username]);
+                Process::run(['sudo', 'userdel', '-r', $request->username]);
+                Process::run(['sudo', 'xp_user_limit', 'del', $request->username, (string) $request->multiuser]);
             }
             if($user->password!=$request->password)
             {
-                Process::input($request->password."\n".$request->password."\n")->timeout(120)->run("sudo passwd {$request->username}");
+                Process::input($request->password."\n".$request->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
 
             }
             return response()->json(['message' => 'User Updated']);
@@ -267,9 +275,9 @@ class ApiController extends Controller
         if ($check_user > 0) {
             Users::where('username', $request->username)->update(['status' => 'active']);
             $user = Users::where('username', $request->username)->get();
-            Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$user[0]->username}");
-            Process::input($user[0]->password."\n".$user[0]->password."\n")->timeout(120)->run("sudo passwd {$request->username}");
-            Process::run("sudo xp_user_limit add {$request->username} {$multiuser}");
+            Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $user[0]->username]);
+            Process::input($user[0]->password."\n".$user[0]->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
+            Process::run(['sudo', 'xp_user_limit', 'add', $request->username, (string) $multiuser]);
 
             return response()->json(['message' => 'User Activated']);
         }
@@ -290,12 +298,12 @@ class ApiController extends Controller
         $multiuser=$user[0]->multiuser;
         if ($check_user > 0) {
             Users::where('username', $request->username)->update(['status' => 'deactive']);
-            Process::run("sudo killall -u {$request->username}");
-            Process::run("sudo pkill -u {$request->username}");
-            Process::run("sudo timeout 10 pkill -u {$request->username}");
-            Process::run("sudo timeout 10 killall -u {$request->username}");
-            Process::run("sudo userdel -r {$request->username}");
-            Process::run("sudo xp_user_limit del {$request->username} {$multiuser}");
+            Process::run(['sudo', 'killall', '-u', $request->username]);
+            Process::run(['sudo', 'pkill', '-u', $request->username]);
+            Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $request->username]);
+            Process::run(['sudo', 'timeout', '10', 'killall', '-u', $request->username]);
+            Process::run(['sudo', 'userdel', '-r', $request->username]);
+            Process::run(['sudo', 'xp_user_limit', 'del', $request->username, (string) $multiuser]);
             return response()->json(['message' => 'User Deactivated']);
         }
         else
@@ -340,9 +348,9 @@ class ApiController extends Controller
             Users::where('username', $request->username)
                 ->update(['status' => 'active', 'end_date' => $newdate]);
             $user = Users::where('username', $request->username)->get();
-            Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$user[0]->username}");
-            Process::input($user[0]->password."\n".$user[0]->password."\n")->timeout(120)->run("sudo passwd {$request->username}");
-            Process::run("sudo xp_user_limit add {$request->username} {$multiuser}");
+            Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $user[0]->username]);
+            Process::input($user[0]->password."\n".$user[0]->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
+            Process::run(['sudo', 'xp_user_limit', 'add', $request->username, (string) $multiuser]);
 
             if ($request->re_date == 'yes') {
                 Users::where('username', $request->username)
@@ -380,9 +388,9 @@ class ApiController extends Controller
             Users::where('username', $request->username)->increment('traffic', $traffic);
             Users::where('username', $request->username)->update(['status' => 'active']);
             $user = Users::where('username', $request->username)->get();
-            Process::run("sudo adduser --disabled-password --gecos '' --shell /usr/sbin/nologin {$user[0]->username}");
-            Process::input($user[0]->password."\n".$user[0]->password."\n")->timeout(120)->run("sudo passwd {$request->username}");
-            Process::run("sudo xp_user_limit add {$request->username} {$multiuser}");
+            Process::run(['sudo', 'adduser', '--disabled-password', '--gecos', '', '--shell', '/usr/sbin/nologin', $user[0]->username]);
+            Process::input($user[0]->password."\n".$user[0]->password."\n")->timeout(120)->run(['sudo', 'passwd', $request->username]);
+            Process::run(['sudo', 'xp_user_limit', 'add', $request->username, (string) $multiuser]);
 
             return response()->json(['message' => 'User Add Traffic']);
         }
@@ -448,14 +456,14 @@ class ApiController extends Controller
         $this->checktoken($token);
         if($method=='user')
         {
-            Process::run("sudo killall -u {$param}");
-            Process::run("sudo pkill -u {$param}");
-            Process::run("sudo timeout 10 pkill -u {$param}");
-            Process::run("sudo timeout 10 killall -u {$param}");
+            Process::run(['sudo', 'killall', '-u', $param]);
+            Process::run(['sudo', 'pkill', '-u', $param]);
+            Process::run(['sudo', 'timeout', '10', 'pkill', '-u', $param]);
+            Process::run(['sudo', 'timeout', '10', 'killall', '-u', $param]);
         }
         elseif($method=='id')
         {
-            Process::run("sudo kill -9 {$param}");
+            Process::run(['sudo', 'kill', '-9', (string) $param]);
         }
 
         return response()->json(['message' => 'User Killed']);
