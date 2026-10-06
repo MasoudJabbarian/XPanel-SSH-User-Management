@@ -1,0 +1,122 @@
+#!/bin/bash
+set -Eeuo pipefail
+
+[[ "${EUID}" -eq 0 ]] || { echo "xpanel-userctl must run as root" >&2; exit 1; }
+
+SSH_CONFIG="/etc/ssh/sshd_config"
+BANNER_DIR="/var/www/html/app/storage/banner"
+USER_RE='^[a-z_][a-z0-9_-]{0,31}$'
+
+die(){ echo "xpanel-userctl: $*" >&2; exit 1; }
+valid_user(){ [[ "$1" =~ $USER_RE ]] || die "invalid Linux username"; }
+valid_port(){ [[ "$1" =~ ^[0-9]+$ ]] && (( "$1" >= 1 && "$1" <= 65535 )) || die "invalid port"; }
+valid_pid(){ [[ "$1" =~ ^[0-9]+$ ]] || die "invalid pid"; }
+
+remove_match_block() {
+  local username="$1" src tmp
+  valid_user "$username"
+  src="$(mktemp)"
+  tmp="$(mktemp)"
+  cp -- "$SSH_CONFIG" "$src"
+  awk -v u="$username" '
+    BEGIN { skip=0 }
+    $0 == "Match User " u { skip=1; next }
+    skip && $0 == "Match all" { skip=0; next }
+    skip && $0 ~ "^Banner /var/www/html/app/storage/banner/" u "-detail$" { next }
+    !skip { print }
+  ' "$src" > "$tmp"
+  if ! /usr/sbin/sshd -t -f "$tmp"; then
+    rm -f "$src" "$tmp"
+    die "generated sshd_config failed validation"
+  fi
+  install -o root -g root -m 0644 "$tmp" "$SSH_CONFIG"
+  rm -f "$src" "$tmp"
+  systemctl reload ssh.service
+}
+
+add_match_block() {
+  local username="$1" src tmp
+  valid_user "$username"
+  src="$(mktemp)"
+  tmp="$(mktemp)"
+  cp -- "$SSH_CONFIG" "$src"
+  awk -v u="$username" '
+    BEGIN { done=0 }
+    $0 == "Match User " u { done=1 }
+    !done && $0 == "Match all" {
+      print "Match User " u
+      print "Banner /var/www/html/app/storage/banner/" u "-detail"
+      print "Match all"
+      done=1
+      next
+    }
+    { print }
+  ' "$src" > "$tmp"
+  if ! grep -q "^Match User $username$" "$tmp"; then
+    printf '\nMatch User %s\nBanner /var/www/html/app/storage/banner/%s-detail\nMatch all\n' "$username" "$username" >> "$tmp"
+  fi
+  /usr/sbin/sshd -t -f "$tmp" || { rm -f "$src" "$tmp"; die "generated sshd_config failed validation"; }
+  install -o root -g root -m 0644 "$tmp" "$SSH_CONFIG"
+  rm -f "$src" "$tmp"
+  install -d -o www-data -g www-data -m 0750 "$BANNER_DIR"
+  systemctl reload ssh.service
+}
+
+case "${1:-}" in
+  add)
+    [[ $# -eq 4 ]] || die "usage: add USER PASSWORD MAX_LOGINS"
+    user="$2"; password="$3"; max="$4"; valid_user "$user"
+    [[ "$max" =~ ^[0-9]+$ ]] || die "invalid max logins"
+    id "$user" &>/dev/null || useradd -m -s /usr/sbin/nologin -c "" "$user"
+    printf '%s\n%s\n' "$password" "$password" | passwd "$user" >/dev/null
+    /usr/local/bin/xp_user_limit add "$user" "$max"
+    ;;
+  password)
+    [[ $# -eq 3 ]] || die "usage: password USER PASSWORD"
+    user="$2"; password="$3"; valid_user "$user"; id "$user" &>/dev/null || die "user does not exist"
+    printf '%s\n%s\n' "$password" "$password" | passwd "$user" >/dev/null
+    ;;
+  limit)
+    [[ $# -eq 3 ]] || die "usage: limit USER MAX_LOGINS"
+    user="$2"; valid_user "$user"; [[ "$3" =~ ^[0-9]+$ ]] || die "invalid max logins"
+    /usr/local/bin/xp_user_limit set "$user" "$3"
+    ;;
+  banner)
+    [[ $# -eq 2 ]] || die "usage: banner USER"; add_match_block "$2"
+    ;;
+  unbanner)
+    [[ $# -eq 2 ]] || die "usage: unbanner USER"; remove_match_block "$2"
+    ;;
+  delete)
+    [[ $# -eq 2 ]] || die "usage: delete USER"
+    user="$2"; valid_user "$user"
+    if id "$user" &>/dev/null; then
+      pkill -u "$user" 2>/dev/null || true
+      userdel -r "$user" 2>/dev/null || true
+    fi
+    remove_match_block "$user"
+    rm -rf -- "$BANNER_DIR/$user-detail"
+    /usr/local/bin/xp_user_limit del "$user" 0 2>/dev/null || true
+    ;;
+  kill-user)
+    [[ $# -eq 2 ]] || die "usage: kill-user USER"; valid_user "$2"
+    pkill -u "$2" 2>/dev/null || true
+    ;;
+  kill-pid)
+    [[ $# -eq 2 ]] || die "usage: kill-pid PID"; valid_pid "$2"
+    kill -TERM "$2" 2>/dev/null || true
+    ;;
+  ssh-port)
+    [[ $# -eq 2 ]] || die "usage: ssh-port PORT"; valid_port "$2"
+    tmp="$(mktemp)"
+    cp -- "$SSH_CONFIG" "$SSH_CONFIG.xpanel-backup"
+    awk -v p="$2" 'BEGIN{done=0} /^[[:space:]]*Port[[:space:]]+/ && done==0 {print "Port " p; done=1; next} {print} END{if(!done) print "Port " p}' "$SSH_CONFIG" > "$tmp"
+    /usr/sbin/sshd -t -f "$tmp" || { rm -f "$tmp"; exit 1; }
+    install -o root -g root -m 0644 "$tmp" "$SSH_CONFIG"
+    rm -f "$tmp"
+    systemctl reload ssh.service
+    ;;
+  *)
+    die "unknown command"
+    ;;
+esac
