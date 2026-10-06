@@ -82,7 +82,7 @@ class ApiController extends Controller
         ]);
         $this->checktoken($request->token);
         $this->assertLinuxUsername($request->username);
-        if($request->traffic>0
+        if($request->traffic>0)
         {$traffic=$request->traffic; }
         if (!empty($request->connection_start)) {
             $st_date = '';
