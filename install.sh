@@ -27,6 +27,7 @@ validate_port "$PORT_SSH" || die "Invalid SSH port."
 DB_NAME="XPanel"
 DB_USER="xpanel"
 read -r -s -p "Database password [leave empty to generate]: " DB_PASSWORD; echo
+if [[ -n "$DB_PASSWORD" && ! "$DB_PASSWORD" =~ ^[A-Za-z0-9]{8,128}$ ]]; then die "Database password must be 8-128 alphanumeric characters."; fi
 if [[ -z "$DB_PASSWORD" ]]; then
   DB_PASSWORD="$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 32)"
 fi
