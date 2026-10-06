@@ -120,7 +120,7 @@ wellcomeINSTALL() {
   echo -e "${GREEN}  9)XPanel v3.8.5"
   echo -e "${GREEN}  10)XPanel v3.7.9"
   echo -ne "${GREEN}\nSelect Version : ${ENDCOLOR}"
-  read n
+  read n < /dev/tty
   if [ "$n" != "" ]; then
     if [ "$n" == "1" ]; then
       linkd=https://api.github.com/repos/xpanel-cp/XPanel-SSH-User-Management/releases/tags/v4-0
@@ -160,17 +160,17 @@ wellcomeINSTALL() {
 userINPU() {
   echo -e "\nPlease input IP Server"
   printf "IP: "
-  read ip
+  read ip < /dev/tty
   if [ -n "$ip" -a "$ip" == " " ]; then
     echo -e "\nPlease input IP Server"
     printf "IP: "
-    read ip
+    read ip < /dev/tty
   fi
   clear
   adminusername=admin
   echo -e "\nPlease input Panel admin user."
   printf "Default user name is \e[33m${adminusername}\e[0m, leave it blank to use this user name: "
-  read usernametmp
+  read usernametmp < /dev/tty
   if [[ -n "${usernametmp}" ]]; then
     adminusername=${usernametmp}
   fi
@@ -208,7 +208,7 @@ userINPU() {
 
   echo -e "\nPlease input Panel admin password."
   printf "Randomly generated password is \e[33m${adminpassword}\e[0m, leave it blank to use this random password : "
-  read passwordtmp
+  read passwordtmp < /dev/tty
   if [[ -n "${passwordtmp}" ]]; then
     adminpassword=${passwordtmp}
   fi
@@ -411,7 +411,7 @@ EOF
 
     echo -e "\nPlease input Panel admin Port, or leave blank to use randomly generated port"
     printf "Random port \033[33m$randomPort:\033[0m "
-    read porttmp
+    read porttmp < /dev/tty
     if [[ -n "${porttmp}" ]]; then
       #Get the server port number from my settings file
       serverPort=${porttmp}
@@ -430,7 +430,7 @@ EOF
     udpport=7300
     echo -e "\nPlease input UDPGW Port ."
     printf "Default Port is \e[33m${udpport}\e[0m, leave it blank to use this Port: "
-    read udpport
+    read udpport < /dev/tty
     sudo bash -c "$(curl -Ls https://raw.githubusercontent.com/xpanel-cp/Nethogs-Json-main/master/install.sh --ipv4)"
     git clone https://github.com/ambrop72/badvpn.git /root/badvpn
     mkdir /root/badvpn/badvpn-build
