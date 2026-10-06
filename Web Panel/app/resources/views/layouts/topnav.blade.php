@@ -33,10 +33,13 @@
                                 <i class="ti ti-settings"></i>
                                 <span>{{__('menu-setting')}}</span>
                             </a>
-                            <a href="{{route('user.logout')}}">
-                                <i class="ti ti-power"></i>
-                                <span>{{__('menu-logout')}}</span>
-                            </a>
+                            <form method="POST" action="{{ route('user.logout') }}" class="d-inline">
+                                @csrf
+                                <button type="submit" class="dropdown-item border-0 bg-transparent">
+                                    <i class="ti ti-power"></i>
+                                    <span>{{__('menu-logout')}}</span>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
