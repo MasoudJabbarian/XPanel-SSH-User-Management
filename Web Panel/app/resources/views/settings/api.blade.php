@@ -1,105 +1,24 @@
 @extends('layouts.master')
-@section('title','XPanel - '.__('setting-api-title'))
+@section('title','XPanel - API')
 @section('content')
-    <!-- [ Main Content ] start -->
-    <div class="pc-container">
-        <div class="pc-content">
-            <!-- [ breadcrumb ] start -->
-            <div class="page-header">
-                <div class="page-block">
-                    <div class="row align-items-center">
-                        <div class="col-md-12">
-                            <div class="page-header-title">
-                                <h2 class="mb-0">{{__('setting-api-title')}}</h2>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- [ breadcrumb ] end -->
-
-
-            <!-- [ Main Content ] start -->
-            <div class="row">
-                <!-- [ sample-page ] start -->
-                <div class="col-sm-12">
-                    <div class="card">
-                        @include('layouts.setting_menu')
-                        <div class="tab-content" id="myTabContent">
-                            <div class="card-body">
-                                <form class="validate-me" action="{{route('settings.api')}}" method="post" enctype="multipart/form-data">
-                                    @csrf
-                                    <div class="form-group row">
-                                        <div class="col-lg-6">
-                                            <input type="text" name="desc" class="form-control" required="">
-                                            <small class="form-text text-muted">{{__('setting-api-desc')}}</small>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row">
-                                        <div class="col-lg-6">
-                                            <input class="form-control" type="text" name="allowip" required="" value="0.0.0.0/0">
-                                            <small class="form-text text-muted">{{__('setting-api-allow')}}</small>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group row">
-                                        <div class="col-lg-4 col-form-label"></div>
-                                        <div class="col-lg-6">
-                                            <input type="submit" class="btn btn-primary" value="{{__('setting-api-submit')}}">
-                                        </div>
-                                    </div>
-                                </form>
-                                <hr>
-                                <div class="col-sm-12">
-                                    <div class="card table-card">
-                                        <div class="card-body">
-                                            <div class="table-responsive">
-                                                <table class="table table-hover" id="pc-dt-simple">
-                                                    <thead>
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>{{__('setting-api-token')}}</th>
-                                                        <th>{{__('setting-api-ip')}}</th>
-                                                        <th class="text-center">{{__('setting-api-renew')}}</th>
-                                                        <th class="text-center">{{__('setting-api-delete')}}</th>
-                                                    </tr>
-
-                                                    @foreach($apis as $api)
-                                                        <td>#</td>
-                                                        <td>{{$api->token}}</td>
-                                                        <td>{{$api->allow_ip}}<br><small>{{$api->description}}</small></td>
-                                                        <td class="text-center">
-                                                            <a href="{{ route('settings.token.renew', ['id' => $api->id]) }}" class="avtar avtar-xs btn-link-success btn-pc-default">
-                                                                <i class="ti ti-refresh f-18"></i>
-                                                            </a>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <a href="{{ route('settings.token.delete', ['id' => $api->id]) }}" class="avtar avtar-xs btn-link-success btn-pc-default">
-                                                                <i class="ti ti-trash f-18"></i>
-                                                            </a></td>
-                                                    </tr>
-                                                    @endforeach
-                                                    </thead>
-                                                    <tbody>
-
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-                <!-- [ sample-page ] end -->
-            </div>
-            <!-- [ Main Content ] end -->
-        </div>
-    </div>
-    <!-- [ Main Content ] end -->
-
-
+<div class="pc-container"><div class="pc-content">
+<div class="page-header"><div class="page-block"><h2 class="mb-0">SSH API</h2></div></div>
+<div class="card"><div class="card-body">
+    <form action="{{ route('settings.api') }}" method="post" class="row g-2 mb-4">@csrf
+        <div class="col-md-4"><input class="form-control" name="description" placeholder="Description" value="SSH management API"></div>
+        <div class="col-md-4"><input class="form-control" name="allow_ip" placeholder="Allowed IP" value="0.0.0.0/0"></div>
+        <div class="col-md-2"><button class="btn btn-primary" type="submit">Create token</button></div>
+    </form>
+    <div class="table-responsive"><table class="table"><thead><tr><th>Description</th><th>Allowed IP</th><th>Token</th><th>Actions</th></tr></thead><tbody>
+    @forelse($apis as $api)
+        <tr><td>{{ $api->description }}</td><td>{{ $api->allow_ip }}</td><td><code>{{ $api->token }}</code></td><td>
+            <form class="d-inline" method="post" action="{{ route('settings.token.renew',['id'=>$api->id]) }}">@csrf<button class="btn btn-sm btn-outline-warning" type="submit">Renew</button></form>
+            <form class="d-inline" method="post" action="{{ route('settings.token.delete',['id'=>$api->id]) }}" onsubmit="return confirm('Delete token?')">@csrf<button class="btn btn-sm btn-outline-danger" type="submit">Delete</button></form>
+        </td></tr>
+    @empty
+        <tr><td colspan="4" class="text-center">No API tokens.</td></tr>
+    @endforelse
+    </tbody></table></div>
+</div></div>
+</div></div>
 @endsection

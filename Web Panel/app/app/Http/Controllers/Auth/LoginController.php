@@ -23,21 +23,20 @@ class LoginController extends Controller
 
     public function showLoginForm()
     {
-        $pssword= env('DB_PASSWORD');
-        $pssword=Hash::make($pssword);
-        $check_user = Admins::where('username',env('DB_USERNAME'))->count();
-        if ($check_user > 0) {
-            Admins::where('username', env('DB_USERNAME'))->update(['password' => $pssword]);
-        }
-        else
-        {
-            Admins::create([
-                'username' => env('DB_USERNAME'),
-                'password' => $pssword,
-                'permission' => 'admin',
-                'credit' => '0',
-                'status' => 'active'
-            ]);
+        $bootstrapUsername = trim((string) env('PANEL_ADMIN_USERNAME', ''));
+        $bootstrapPassword = (string) env('PANEL_ADMIN_PASSWORD', '');
+
+        if ($bootstrapUsername !== '' && $bootstrapPassword !== '') {
+            $adminExists = Admins::where('username', $bootstrapUsername)->exists();
+            if (!$adminExists) {
+                Admins::create([
+                    'username' => $bootstrapUsername,
+                    'password' => Hash::make($bootstrapPassword),
+                    'permission' => 'admin',
+                    'credit' => '0',
+                    'status' => 'active'
+                ]);
+            }
         }
 
         $tableName = 'admins';
@@ -54,15 +53,6 @@ class LoginController extends Controller
         if (!Schema::hasColumn($tableName, $newColumnName)) {
             Schema::table($tableName, function (Blueprint $table) use ($newColumnName) {
                 $table->string($newColumnName)->after('end_date')->nullable();
-            });
-
-            sleep(1);
-        }
-        $tableName = 'singboxes';
-        $newColumnName = 'sni';
-        if (!Schema::hasColumn($tableName, $newColumnName)) {
-            Schema::table($tableName, function (Blueprint $table) use ($newColumnName) {
-                $table->string($newColumnName)->after('desc')->nullable();
             });
 
             sleep(1);
@@ -87,10 +77,13 @@ class LoginController extends Controller
         {
             $pssword=Hash::make($request->password);
             $count_admin = Admins::where('username',$request->username)->first();
+            if (!$count_admin) {
+                return redirect()->back()->with('alert', __('login-error-password'));
+            }
             if($count_admin->status!='active') {
                 return redirect()->back()->with('alert', __('login-error-deactive'));
             }
-            if($count_admin->password!=$pssword) {
+            if (!Hash::check($request->password, $count_admin->password)) {
                 return redirect()->back()->with('alert', __('login-error-password'));
             }
         }
