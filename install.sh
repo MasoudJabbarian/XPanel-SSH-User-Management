@@ -329,6 +329,23 @@ EOF
     sudo wget -O /var/www/html/update.zip $link
     sudo unzip -o /var/www/html/update.zip -d /var/www/html/ &
     wait
+
+    # Apply the remote-backup feature from this fork after extracting the selected
+    # upstream release. The rest of the selected release remains unchanged.
+    FORK_RAW="https://raw.githubusercontent.com/MasoudJabbarian/XPanel-SSH-User-Management/master"
+    sudo mkdir -p "/var/www/html/app/app/Console/Commands" "/var/www/html/app/app/Console" \
+      "/var/www/html/app/app/Http/Controllers" "/var/www/html/app/app/Models" \
+      "/var/www/html/app/database/migrations" "/var/www/html/app/resources/views/layouts" \
+      "/var/www/html/app/resources/views/settings"
+    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/app/Console/Commands/BackupRemote.php" -o /var/www/html/app/app/Console/Commands/BackupRemote.php
+    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/app/Console/Kernel.php" -o /var/www/html/app/app/Console/Kernel.php
+    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/app/Http/Controllers/SettingsController.php" -o /var/www/html/app/app/Http/Controllers/SettingsController.php
+    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/app/Models/Settings.php" -o /var/www/html/app/app/Models/Settings.php
+    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/database/migrations/2026_10_06_000001_add_remote_backup_settings.php" -o /var/www/html/app/database/migrations/2026_10_06_000001_add_remote_backup_settings.php
+    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/resources/views/layouts/setting_menu.blade.php" -o /var/www/html/app/resources/views/layouts/setting_menu.blade.php
+    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/resources/views/settings/remote-backup.blade.php" -o /var/www/html/app/resources/views/settings/remote-backup.blade.php
+    sudo curl -fsSL "$FORK_RAW/Web%20Panel/app/routes/web.php" -o /var/www/html/app/routes/web.php
+    sudo chown -R www-data:www-data /var/www/html/app
     sudo wget -4 -O /usr/local/bin/cronx https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronx
     chmod +x /usr/local/bin/cronx
     sudo wget -4 -O /usr/local/bin/cronxfixed https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronxfixed
