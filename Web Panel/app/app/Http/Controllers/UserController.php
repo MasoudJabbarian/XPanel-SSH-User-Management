@@ -69,7 +69,7 @@ class UserController extends Controller
         if ($protocol !== null and $protocol !== 'all') {
             $query->where('protocol_sb', $protocol);
         }
-        if($user->permission!='admin')
+        if($user->permission!='admin'))
         {
             $query->where('customer_user', $user->username);
         }
