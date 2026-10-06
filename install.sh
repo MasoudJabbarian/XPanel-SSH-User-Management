@@ -350,7 +350,9 @@ EOF
     chmod +x /usr/local/bin/cronx
     sudo wget -4 -O /usr/local/bin/cronxfixed https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronxfixed
     chmod +x /usr/local/bin/cronxfixed
-    sed -i "s@zend_extension = /usr/local/ioncube/ioncube_loader_lin_${PHP_TARGET_VERSION}.so@@" "/etc/php/${PHP_TARGET_VERSION}/cli/php.ini"
+    # Remove any stale ionCube zend_extension path before the fork's loader script runs.
+sed -i '/^[[:space:]]*zend_extension[[:space:]]*=.*ioncube_loader_lin_/d' "/etc/php/${PHP_TARGET_VERSION}/cli/php.ini"
+sed -i '/^[[:space:]]*zend_extension[[:space:]]*=.*ioncube_loader_lin_/d' "/etc/php/${PHP_TARGET_VERSION}/fpm/php.ini"
     bash <(curl -Ls https://raw.githubusercontent.com/MasoudJabbarian/XPanel-SSH-User-Management/master/ioncube.sh --ipv4)
     wait
 
