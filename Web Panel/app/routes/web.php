@@ -84,27 +84,7 @@ Route::prefix("$panel")->group(function()
 
 
 });
-Route::prefix('api')->group(function()
-{
-    Route::get('/{token}/listuser',[ApiController::class,'listuser'])->name('api.listuser');
-    Route::get('/{token}/listuser/{sort}',[ApiController::class,'sort_listuser'])->name('api.listuser.sort');
-    Route::post('/adduser',[ApiController::class,'add_user'])->name('api.add.user');
-    Route::get('/{token}/user/{username}',[ApiController::class,'show_detail'])->name('api.show.detail');
-    Route::post('/edituser',[ApiController::class,'edit'])->name('api.user.edit');
-    Route::post('/delete',[ApiController::class,'delete_user'])->name('api.user.delete');
-    Route::post('/active',[ApiController::class,'active_user'])->name('api.user.active');
-    Route::post('/deactive',[ApiController::class,'deactive_user'])->name('api.user.deactive');
-    Route::post('/retraffic',[ApiController::class,'retraffic_user'])->name('api.user.retraffic');
-    Route::post('/renewal',[ApiController::class,'renewal_user'])->name('api.user.renewal');
-    Route::post('/traffic',[ApiController::class,'traffic_user'])->name('api.user.traffic');
-    Route::get('/{token}/online',[ApiController::class,'online_user'])->name('api.user.online');
-    Route::get('/{token}/kill/{method}/{param}',[ApiController::class,'kill'])->name('api.user.kill');
-    Route::get('/{token}/backup',[ApiController::class,'backup'])->name('api.backup');
-    Route::get('/{token}/backup/dl/{name}',[ApiController::class,'download_backup'])->name('api.backup.download');
-    Route::get('/{token}/filtering',[ApiController::class,'filtering'])->name('api.filtering');
-    //Route::post('/sync/usercheck',[ApiController::class,'sync_check'])->name('sync.user.check');
-    //Route::get('/sync/getuser/{user}/{pass}',[ApiController::class,'sync_user'])->name('sync.user.check');
-});
+
 Route::prefix('fixer')->middleware('auth:admins')->group(function() {
     Route::get('/exp', [FixerController::class, 'cronexp'])->name('exp');
     Route::get('/multiuser', [FixerController::class, 'multiuser'])->name('multiuser');
