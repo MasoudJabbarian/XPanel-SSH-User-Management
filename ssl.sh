@@ -1,51 +1,47 @@
-#!/bin/bash
-def_port=$(grep "PORT_PANEL=" /var/www/html/app/.env | awk -F "=" '{print $2}')
-read -rp "Please enter the pointed domain / sub-domain name: " domain
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d $domain
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-sudo tee /etc/nginx/sites-available/default <<'EOF'
+if [[ ${EUID} -ne 0 ]]; then
+  echo "Please run as root." >&2
+  exit 1
+fi
+
+ENV_FILE="/var/www/html/app/.env"
+if [[ ! -r "$ENV_FILE" ]]; then
+  echo "Missing $ENV_FILE" >&2
+  exit 1
+fi
+
+panel_port="$(awk -F= '/^PORT_PANEL=/{print $2}' "$ENV_FILE" | tail -n1 | tr -d '[:space:]')"
+[[ "$panel_port" =~ ^[0-9]{1,5}$ ]] && (( panel_port >= 1 && panel_port <= 65535 )) || { echo "Invalid PORT_PANEL." >&2; exit 1; }
+
+read -r -p "Please enter the pointed domain / sub-domain name: " domain
+domain="${domain,,}"
+if [[ ! "$domain" =~ ^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$ ]]; then
+  echo "Invalid domain name." >&2
+  exit 1
+fi
+
+apt-get update
+apt-get install -y certbot python3-certbot-nginx
+
+certbot --nginx --non-interactive --agree-tos --register-unsafely-without-email -d "$domain"
+
+php_sock=""
+for candidate in /run/php/php*-fpm.sock /var/run/php/php*-fpm.sock; do
+  if [[ -S "$candidate" ]]; then
+    php_sock="$candidate"
+    break
+  fi
+done
+[[ -n "$php_sock" ]] || { echo "Could not find a PHP-FPM socket." >&2; exit 1; }
+
+cat > /etc/nginx/sites-available/xpanel <<EOF
 server {
     listen 80;
-    server_name example.com;
+    server_name $domain;
     root /var/www/html/example;
     index index.php index.html;
-
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
-    location ~ \.php$ {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
-        fastcgi_param PHP_VALUE "memory_limit=4096M";
-    }
-    location ~ /\.ht {
-        deny all;
-    }
-     location /ws
-    {
-    proxy_pass http://127.0.0.1:8880/;
-    proxy_redirect off;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_read_timeout 52w;
-    }
-}
-server {
-    listen 443 ssl;
-    server_name example.com;
-
-    root /var/www/html/example;
-    index index.php index.html;
-
-    ssl_certificate /etc/letsencrypt/live/domin/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/domin/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
 
     location / {
         try_files $uri $uri/ /index.php?$query_string;
@@ -53,7 +49,7 @@ server {
 
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_pass unix:$php_sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
     }
 
@@ -62,11 +58,8 @@ server {
     }
 
     location /ws {
-        if ($http_upgrade != "websocket") {
-                return 404;
-        }
+        if ($http_upgrade != "websocket") { return 404; }
         proxy_pass http://127.0.0.1:8880;
-        proxy_redirect off;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -76,92 +69,69 @@ server {
         proxy_read_timeout 52w;
     }
 }
+
 server {
-    listen serverPort ssl;
-    server_name example.com;
+    listen $panel_port ssl;
+    server_name $domain;
     root /var/www/html/cp;
     index index.php index.html;
 
-    ssl_certificate /etc/letsencrypt/live/domin/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/domin/privkey.pem;
-    
+    ssl_certificate /etc/letsencrypt/live/$domain/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
+
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_pass unix:$php_sock;
         fastcgi_param PHP_VALUE "memory_limit=4096M";
     }
+
     location ~ /\.ht {
         deny all;
     }
 }
 EOF
-sed -i "s/serverPort/$def_port/g" /etc/nginx/sites-available/default
-sed -i "s/domin/$domain/g" /etc/nginx/sites-available/default
-sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
 
-sudo systemctl start nginx
-sudo systemctl enable nginx
-sudo systemctl reload nginx
+ln -sfn /etc/nginx/sites-available/xpanel /etc/nginx/sites-enabled/xpanel
 
-multiin=$(echo "https://${domain}:$def_port/fixer/multiuser")
-cat > /var/www/html/kill.sh << ENDOFFILE
-#!/bin/bash
-#By Alireza
-i=0
-while [ 1i -lt 10 ]; do 
-cmd=(bbh '$multiin')
-echo cmd &
+cat > /var/www/html/kill.sh <<EOF
+#!/usr/bin/env bash
+set -Eeuo pipefail
+for i in $(seq 1 10); do
+  curl -fsS --max-time 30 "https://$domain:$panel_port/fixer/multiuser" >/dev/null || true
   sleep 6
-  i=(( i + 1 ))
 done
-ENDOFFILE
-wait
-sudo sed -i 's/(bbh/$(curl -v -H "A: B"/' /var/www/html/kill.sh
-wait
-sudo sed -i 's/cmd/$cmd/' /var/www/html/kill.sh
-wait
-sudo sed -i 's/1i/$i/' /var/www/html/kill.sh
-wait
-sudo sed -i 's/((/$((/' /var/www/html/kill.sh
-chmod +x /var/www/html/kill.sh
-wait
-othercron=$(echo "https://${domain}:$def_port/fixer/other")
-  cat >/var/www/html/other.sh <<ENDOFFILE
-#!/bin/bash
-#By Alireza
-i=0
-while [ 1i -lt 3 ]; do
-cmd=(bbh '$othercron')
-echo cmd &
-sleep 17
-i=(( i + 1 ))
+EOF
+
+cat > /var/www/html/other.sh <<EOF
+#!/usr/bin/env bash
+set -Eeuo pipefail
+for i in $(seq 1 3); do
+  curl -fsS --max-time 30 "https://$domain:$panel_port/fixer/other" >/dev/null || true
+  sleep 17
 done
-ENDOFFILE
-  wait
-  sudo sed -i 's/(bbh/$(curl -v -H "A: B"/' /var/www/html/other.sh
-  wait
-  sudo sed -i 's/cmd/$cmd/' /var/www/html/other.sh
-  wait
-  sudo sed -i 's/1i/$i/' /var/www/html/other.sh
-  wait
-  sudo sed -i 's/((/$((/' /var/www/html/other.sh
-  wait
-  chmod +x /var/www/html/other.sh
-  crontab -r
-(crontab -l | grep . ; echo -e "* * * * * /var/www/html/kill.sh") | crontab -
-(crontab -l | grep . ; echo -e "* * * * * /var/www/html/other.sh") | crontab -
-(crontab -l | grep . ; echo -e "0 */1 * * * /var/www/html/killlog.sh") | crontab -
-(crontab -l ; echo "* * * * * wget -q -O /dev/null 'https://${domain}:$def_port/fixer/exp' > /dev/null 2>&1") | crontab -
-(crontab -l ; echo "0 * * * * wget -q -O /dev/null 'https://${domain}:$def_port/fixer/checkhurly' > /dev/null 2>&1") | crontab -
-(crontab -l ; echo "*/10 * * * * wget -q -O /dev/null 'https://${domain}:$def_port/fixer/checktraffic' > /dev/null 2>&1") | crontab -
-(crontab -l ; echo "*/15 * * * * wget -q -O /dev/null 'https://${domain}:$def_port/fixer/checkfilter' > /dev/null 2>&1") | crontab -
-(crontab -l ; echo "0 0 * * * wget -q -O /dev/null ''https://${domain}:$def_port/fixer/send/email/3day' > /dev/null 2>&1") | crontab -
-(crontab -l ; echo "0 0 * * * wget -q -O /dev/null ''https://${domain}:$def_port/fixer/send/email/24h' > /dev/null 2>&1") | crontab -
-if dpkg -l | grep -q dropbear; then
-(crontab -l | grep . ; echo -e "* * * * * /var/www/html/dropbear.sh") | crontab -
-fi
-clear
-printf "\nHTTPS Address : https://${domain}:$def_port/login \n"
+EOF
+
+chmod 0750 /var/www/html/kill.sh /var/www/html/other.sh
+chown root:root /var/www/html/kill.sh /var/www/html/other.sh
+
+cat > /etc/cron.d/xpanel <<EOF
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+* * * * * root /var/www/html/kill.sh
+* * * * * root /var/www/html/other.sh
+0 * * * * root curl -fsS --max-time 30 "https://$domain:$panel_port/fixer/checkhurly" >/dev/null 2>&1
+*/10 * * * * root curl -fsS --max-time 30 "https://$domain:$panel_port/fixer/checktraffic" >/dev/null 2>&1
+*/15 * * * * root curl -fsS --max-time 30 "https://$domain:$panel_port/fixer/checkfilter" >/dev/null 2>&1
+0 0 * * * root curl -fsS --max-time 30 "https://$domain:$panel_port/fixer/exp" >/dev/null 2>&1
+EOF
+chmod 0644 /etc/cron.d/xpanel
+
+nginx -t
+systemctl enable --now nginx
+systemctl reload nginx
+echo "HTTPS configured for https://$domain:$panel_port/"
