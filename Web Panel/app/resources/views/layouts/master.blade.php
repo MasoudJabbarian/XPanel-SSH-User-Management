@@ -32,19 +32,6 @@
         @endif
         @yield('content')
         @include('layouts.footer')
-        @if(env('APP_LOCALE')=='fa')
-            <style>
-                .xguard_loc{
-                    left: 5px; position: fixed; width: 40px; bottom: 50px;
-                }
-            </style>
-        @else
-            <style>
-                .xguard_loc{
-                    right: 5px; position: fixed; width: 40px; bottom: 50px;
-                }
-            </style>
-        @endif
         </body>
 
 </html>
