@@ -236,7 +236,9 @@ class SettingsController extends Controller
             $address= displayServerURL();
 
 
-            exec("sudo cronx", $outputs, $returnVar);
+            $process = Process::run(['sudo', 'cronx']);
+            $outputs = preg_split("/\r\n|\n|\r/", trim($process->output()));
+            $returnVar = $process->exitCode();
             return view('settings.crontab', compact('outputs','address'));
         }
 
@@ -831,7 +833,10 @@ echo curl_get_contents("$site");
         $request->validate([
             'address' => 'required|string'
         ]);
-        exec("sudo cronxfixed $request->address", $outputs, $returnVar);
+        $request->validate(['address' => 'required|string|regex:/^[a-zA-Z0-9.-]+(?::[0-9]{1,5})?$/']);
+        $process = Process::run(['sudo', 'cronxfixed', $request->address]);
+        $outputs = preg_split("/\r\n|\n|\r/", trim($process->output()));
+        $returnVar = $process->exitCode();
         return redirect()->intended(route('settings', ['name' => 'cronjob']))->with('alert', __('allert-success'));
     }
 
