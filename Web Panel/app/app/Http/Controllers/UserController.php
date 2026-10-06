@@ -280,20 +280,7 @@ websiteaddress, PHP_URL_HOST);
                 'total' => '0'
             ]);
             if (env('STATUS_LOG', 'deactive') == 'active') {
-                $replacement = "Match User {$user->username}\nBanner /var/www/html/app/storage/banner/{$user->username}-detail\nMatch all";
-                $file = fopen("/etc/ssh/sshd_config", "r+");
-                $fileContent = fread($file, filesize("/etc/ssh/sshd_config"));
-                if (strpos($fileContent, "#Match all") !== false) {
-                    $modifiedContent = str_replace("#Match all", $replacement, $fileContent);
-                    rewind($file);
-                    fwrite($file, $modifiedContent);
-                } elseif (strpos($fileContent, "Match User {$user->username}\n") === false and strpos($fileContent, "#Match all\n") === false) {
-                    $modifiedContent = str_replace("Match all", $replacement, $fileContent);
-                    rewind($file);
-                    fwrite($file, $modifiedContent);
-                }
-                fclose($file);
-                Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
+                Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'banner', $user->username]);
             }
             Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $user->username, $user->password, (string) $request->multiuser]);
             DB::commit();
@@ -404,20 +391,7 @@ websiteaddress, PHP_URL_HOST);
                     'total' => '0'
                 ]);
                 if (env('STATUS_LOG', 'deactive') == 'active') {
-                    $replacement = "Match User {$user->username}\nBanner /var/www/html/app/storage/banner/{$user->username}-detail\nMatch all";
-                    $file = fopen("/etc/ssh/sshd_config", "r+");
-                    $fileContent = fread($file, filesize("/etc/ssh/sshd_config"));
-                    if (strpos($fileContent, "#Match all") !== false) {
-                        $modifiedContent = str_replace("#Match all", $replacement, $fileContent);
-                        rewind($file);
-                        fwrite($file, $modifiedContent);
-                    } elseif (strpos($fileContent, "Match User {$user->username}\n") === false and strpos($fileContent, "#Match all\n") === false) {
-                        $modifiedContent = str_replace("Match all", $replacement, $fileContent);
-                        rewind($file);
-                        fwrite($file, $modifiedContent);
-                    }
-                    fclose($file);
-                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'banner', $user->username]);
                 }
             Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $user->username, $user->password, (string) $request->multiuser]);
                 DB::commit();
@@ -453,20 +427,7 @@ websiteaddress, PHP_URL_HOST);
                 $password=$user[0]->password;
                 $multiuser=$user[0]->multiuser;
                 if (env('STATUS_LOG', 'deactive') == 'active') {
-                    $replacement = "Match User {$username}\nBanner /var/www/html/app/storage/banner/{$username}-detail\nMatch all";
-                    $file = fopen("/etc/ssh/sshd_config", "r+");
-                    $fileContent = fread($file, filesize("/etc/ssh/sshd_config"));
-                    if (strpos($fileContent, "#Match all") !== false) {
-                        $modifiedContent = str_replace("#Match all", $replacement, $fileContent);
-                        rewind($file);
-                        fwrite($file, $modifiedContent);
-                    } elseif (strpos($fileContent, "Match User {$username}\n") === false and strpos($fileContent, "#Match all\n") === false) {
-                        $modifiedContent = str_replace("Match all", $replacement, $fileContent);
-                        rewind($file);
-                        fwrite($file, $modifiedContent);
-                    }
-                    fclose($file);
-                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'banner', $username]);
                 }
             Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $username, $password, (string) $multiuser]);
             }
@@ -676,20 +637,7 @@ websiteaddress, PHP_URL_HOST);
                         $password=$user[0]->password;
                         $multiuser=$user[0]->multiuser;
                         if (env('STATUS_LOG', 'deactive') == 'active') {
-                            $replacement = "Match User {$username}\nBanner /var/www/html/app/storage/banner/{$username}-detail\nMatch all";
-                            $file = fopen("/etc/ssh/sshd_config", "r+");
-                            $fileContent = fread($file, filesize("/etc/ssh/sshd_config"));
-                            if (strpos($fileContent, "#Match all") !== false) {
-                                $modifiedContent = str_replace("#Match all", $replacement, $fileContent);
-                                rewind($file);
-                                fwrite($file, $modifiedContent);
-                            } elseif (strpos($fileContent, "Match User {$username}\n") === false and strpos($fileContent, "#Match all\n") === false) {
-                                $modifiedContent = str_replace("Match all", $replacement, $fileContent);
-                                rewind($file);
-                                fwrite($file, $modifiedContent);
-                            }
-                            fclose($file);
-                            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
+                            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'banner', $username]);
                         }
             Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $username, $password, (string) $multiuser]);
                     }
@@ -758,20 +706,7 @@ websiteaddress, PHP_URL_HOST);
                         $password=$user[0]->password;
                         $multiuser=$user[0]->multiuser;
                         if (env('STATUS_LOG', 'deactive') == 'active') {
-                            $replacement = "Match User {$username}\nBanner /var/www/html/app/storage/banner/{$username}-detail\nMatch all";
-                            $file = fopen("/etc/ssh/sshd_config", "r+");
-                            $fileContent = fread($file, filesize("/etc/ssh/sshd_config"));
-                            if (strpos($fileContent, "#Match all") !== false) {
-                                $modifiedContent = str_replace("#Match all", $replacement, $fileContent);
-                                rewind($file);
-                                fwrite($file, $modifiedContent);
-                            } elseif (strpos($fileContent, "Match User {$username}\n") === false and strpos($fileContent, "#Match all\n") === false) {
-                                $modifiedContent = str_replace("Match all", $replacement, $fileContent);
-                                rewind($file);
-                                fwrite($file, $modifiedContent);
-                            }
-                            fclose($file);
-                            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
+                            Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'banner', $username]);
                         }
             Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'add', $username, $password, (string) $multiuser]);
                     }
@@ -821,20 +756,7 @@ websiteaddress, PHP_URL_HOST);
 
                 if ($check_user > 0) {
                     if (env('STATUS_LOG', 'deactive') == 'active') {
-                        $replacement = "Match User {$username}\nBanner /var/www/html/app/storage/banner/{$username}-detail\nMatch all";
-                        $file = fopen("/etc/ssh/sshd_config", "r+");
-                        $fileContent = fread($file, filesize("/etc/ssh/sshd_config"));
-                        if (strpos($fileContent, "#Match all") !== false) {
-                            $modifiedContent = str_replace("#Match all", $replacement, $fileContent);
-                            rewind($file);
-                            fwrite($file, $modifiedContent);
-                        } elseif (strpos($fileContent, "Match User {$username}\n") === false and strpos($fileContent, "#Match all\n") === false) {
-                            $modifiedContent = str_replace("Match all", $replacement, $fileContent);
-                            rewind($file);
-                            fwrite($file, $modifiedContent);
-                        }
-                        fclose($file);
-                        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
+                        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'banner', $username]);
                     }
                     Users::where('username', $username)->update(['status' => 'active', 'end_date' => $newdate]);
 
@@ -857,20 +779,7 @@ websiteaddress, PHP_URL_HOST);
                 $check_user = Users::where('username', $username)->where('customer_user', $user->username)->count();
                 if ($check_user > 0) {
                     if (env('STATUS_LOG', 'deactive') == 'active') {
-                        $replacement = "Match User {$username}\nBanner /var/www/html/app/storage/banner/{$username}-detail\nMatch all";
-                        $file = fopen("/etc/ssh/sshd_config", "r+");
-                        $fileContent = fread($file, filesize("/etc/ssh/sshd_config"));
-                        if (strpos($fileContent, "#Match all") !== false) {
-                            $modifiedContent = str_replace("#Match all", $replacement, $fileContent);
-                            rewind($file);
-                            fwrite($file, $modifiedContent);
-                        } elseif (strpos($fileContent, "Match User {$username}\n") === false and strpos($fileContent, "#Match all\n") === false) {
-                            $modifiedContent = str_replace("Match all", $replacement, $fileContent);
-                            rewind($file);
-                            fwrite($file, $modifiedContent);
-                        }
-                        fclose($file);
-                        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
+                        Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'banner', $username]);
                     }
                     Users::where('username', $username)->update(['status' => 'active', 'end_date' => $newdate]);
 
@@ -977,20 +886,7 @@ ired|numeric',
             $check_user = Users::where('username', $request->username_re)->count();
             if ($check_user > 0) {
                 if (env('STATUS_LOG', 'deactive') == 'active') {
-                    $replacement = "Match User {$request->username_re}\nBanner /var/www/html/app/storage/banner/{$request->username_re}-detail\nMatch all";
-                    $file = fopen("/etc/ssh/sshd_config", "r+");
-                    $fileContent = fread($file, filesize("/etc/ssh/sshd_config"));
-                    if (strpos($fileContent, "#Match all") !== false) {
-                        $modifiedContent = str_replace("#Match all", $replacement, $fileContent);
-                        rewind($file);
-                        fwrite($file, $modifiedContent);
-                    } elseif (strpos($fileContent, "Match User {$request->username_re}\n") === false and strpos($fileContent, "#Match all\n") === false) {
-                        $modifiedContent = str_replace("Match all", $replacement, $fileContent);
-                        rewind($file);
-                        fwrite($file, $modifiedContent);
-                    }
-                    fclose($file);
-                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'banner', $request->username_re]);
                 }
                 Users::where('username', $request->username_re)->update(['status' => 'active', 'end_date' => $newdate]);
 
@@ -1013,20 +909,7 @@ ired|numeric',
             $check_user = Users::where('username', $request->username_re)->where('customer_user', $user->username)->count();
             if ($check_user > 0) {
                 if (env('STATUS_LOG', 'deactive') == 'active') {
-                    $replacement = "Match User {$request->username_re}\nBanner /var/www/html/app/storage/banner/{$request->username_re}-detail\nMatch all";
-                    $file = fopen("/etc/ssh/sshd_config", "r+");
-                    $fileContent = fread($file, filesize("/etc/ssh/sshd_config"));
-                    if (strpos($fileContent, "#Match all") !== false) {
-                        $modifiedContent = str_replace("#Match all", $replacement, $fileContent);
-                        rewind($file);
-                        fwrite($file, $modifiedContent);
-                    } elseif (strpos($fileContent, "Match User {$request->username_re}\n") === false and strpos($fileContent, "#Match all\n") === false) {
-                        $modifiedContent = str_replace("Match all", $replacement, $fileContent);
-                        rewind($file);
-                        fwrite($file, $modifiedContent);
-                    }
-                    fclose($file);
-                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'reload-ssh']);
+                    Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'banner', $request->username_re]);
                 }
                 Users::where('username', $request->username_re)->update(['status' => 'active', 'end_date' => $newdate]);
 
