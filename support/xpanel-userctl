@@ -79,7 +79,7 @@ case "${1:-}" in
   limit)
     [[ $# -eq 3 ]] || die "usage: limit USER MAX_LOGINS"
     user="$2"; valid_user "$user"; [[ "$3" =~ ^[0-9]+$ ]] || die "invalid max logins"
-    /usr/local/bin/xp_user_limit set "$user" "$3"
+    /usr/local/bin/xp_user_limit add "$user" "$3"
     ;;
   banner)
     [[ $# -eq 2 ]] || die "usage: banner USER"; add_match_block "$2"
