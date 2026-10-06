@@ -31,6 +31,14 @@
           </div>
           <button class="btn btn-primary" type="submit">Save settings</button>
         </form>
+        <hr>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <form method="post" action="{{ route('settings.remote-backup.restore') }}" onsubmit="return confirm('پنج فایل آخر بکاپ از سرور بکاپ خوانده و روی سرور اصلی کپی شوند؟');">
+            @csrf
+            <button class="btn btn-outline-primary" type="submit">بازیابی فایل های سرور بکاپ</button>
+          </form>
+          <small class="text-muted">۵ فایل آخر با همان فرمت اصلی (.sql.gz) دریافت می‌شوند و محتوای آنها تغییر نمی‌کند.</small>
+        </div>
         @if($settings->remote_backup_last_status)
           <hr><div><strong>Last status:</strong> {{ $settings->remote_backup_last_status }}</div>
           <div><strong>Last run:</strong> {{ $settings->remote_backup_last_at }}</div>
