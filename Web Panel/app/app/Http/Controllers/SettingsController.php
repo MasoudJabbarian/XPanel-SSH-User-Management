@@ -265,11 +265,11 @@ class SettingsController extends Controller
     {
         $this->check();
         $request->validate([
-            'port_ssh_tls' => 'required|numeric',
+            'port_ssh_tls' => 'required|integer|min:1|max:65535',
         ]);
-        shell_exec("sudo sed -i \"s/accept =.*/accept = {$request->port_ssh_tls}/g\" /etc/stunnel/stunnel.conf");
-        shell_exec("sudo systemctl enable stunnel4");
-        shell_exec("sudo systemctl restart stunnel4");
+        $tlsPort = (int) $request->port_ssh_tls;
+        Process::run(['sudo', 'sed', '-i', "s/accept =.*/accept = {$tlsPort}/g", '/etc/stunnel/stunnel.conf']);
+        Process::run(['sudo', 'systemctl', 'enable', '--now', 'stunnel4']);
         Settings::where('id', '1')->update(['tls_port' => $request->port_ssh_tls]);
         return response()->json(['message' => __('settings-port-alert-success')]);
 
