@@ -1,6 +1,11 @@
 #!/bin/bash
 set -Eeuo pipefail
 
+read_env() {
+  local key="$1" file="/var/www/html/app/.env"
+  awk -F= -v k="$key" '$1 == k {sub(/^[^=]*=/, ""); gsub(/^"|"$/, ""); print; exit}' "$file"
+}
+
 [[ "${EUID}" -eq 0 ]] || { echo "xpanel-userctl must run as root" >&2; exit 1; }
 
 SSH_CONFIG="/etc/ssh/sshd_config"
@@ -80,7 +85,7 @@ case "${1:-}" in
     [[ $# -eq 1 ]] || die "usage: db-backup"
     ENV_FILE="/var/www/html/app/.env"
     [[ -f "$ENV_FILE" ]] || die "missing application environment"
-    set -a; . "$ENV_FILE"; set +a
+    DB_DATABASE="$(read_env DB_DATABASE)"; DB_USERNAME="$(read_env DB_USERNAME)"; DB_PASSWORD="$(read_env DB_PASSWORD)"
     [[ "$DB_DATABASE" =~ ^[A-Za-z0-9_]+$ && "$DB_USERNAME" =~ ^[A-Za-z0-9_]+$ ]] || die "invalid database configuration"
     install -d -o www-data -g www-data -m 0750 "$BANNER_DIR/../backup"
     name="XPanel-$(date +%Y%m%d-%H%M%S).sql"
@@ -94,7 +99,7 @@ case "${1:-}" in
     [[ "$file" == "$(basename -- "$file")" && "$file" =~ ^[A-Za-z0-9._-]+\.sql(\.gz)?$ ]] || die "invalid backup filename"
     ENV_FILE="/var/www/html/app/.env"
     [[ -f "$ENV_FILE" ]] || die "missing application environment"
-    set -a; . "$ENV_FILE"; set +a
+    DB_DATABASE="$(read_env DB_DATABASE)"; DB_USERNAME="$(read_env DB_USERNAME)"; DB_PASSWORD="$(read_env DB_PASSWORD)"
     [[ "$DB_DATABASE" =~ ^[A-Za-z0-9_]+$ && "$DB_USERNAME" =~ ^[A-Za-z0-9_]+$ ]] || die "invalid database configuration"
     path="/var/www/html/app/storage/backup/$file"
     [[ -f "$path" ]] || die "backup does not exist"
