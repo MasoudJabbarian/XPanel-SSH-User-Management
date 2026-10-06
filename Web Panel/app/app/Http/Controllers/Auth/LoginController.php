@@ -87,7 +87,10 @@ class LoginController extends Controller
         {
             $pssword=Hash::make($request->password);
             $count_admin = Admins::where('username',$request->username)->first();
-            if (!$count_admin) {\n                return redirect()->back()->with('alert', __('login-error-password'));\n            }\n            if($count_admin->status!='active') {
+            if (!$count_admin) {
+                return redirect()->back()->with('alert', __('login-error-password'));
+            }
+            if($count_admin->status!='active') {
                 return redirect()->back()->with('alert', __('login-error-deactive'));
             }
             if (!Hash::check($request->password, $count_admin->password)) {
