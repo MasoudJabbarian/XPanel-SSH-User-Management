@@ -256,7 +256,7 @@ startINSTALL() {
     sudo apt-get install coreutils
     apt install curl -y
     apt install git cmake -y
-    apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl cron -y
+    apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl php8.1-ssh2 cron -y
     sudo apt install php8.1-fpm -y
     sudo apt install php8.1 php8.1-cli php8.1-common php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl -y
     wait
@@ -272,7 +272,7 @@ startINSTALL() {
       apt remove php* -y
       apt remove php -y
       apt autoremove -y
-      apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl cron -y
+      apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl php8.1-ssh2 cron -y
       sudo apt install php8.1-fpm
       sudo apt install php8.1 php8.1-cli php8.1-common  php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl -y
 
