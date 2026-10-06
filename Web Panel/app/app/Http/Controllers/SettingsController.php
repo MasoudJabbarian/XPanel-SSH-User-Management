@@ -198,16 +198,16 @@ class SettingsController extends Controller
     {
         $this->check();
         $request->validate([
-            'username' => 'required|string|max:64',
-            'allow_ip' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:255',
+            'allow_ip' => 'nullable|ip',
             'description' => 'nullable|string|max:255',
         ]);
         $token = bin2hex(random_bytes(32));
         Api::create([
-            'username' => $request->username,
+            'username' => Auth::user()->username,
             'token' => $token,
             'allow_ip' => $request->allow_ip ?: '0.0.0.0/0',
-            'description' => $request->description ?: 'API',
+            'description' => $request->description ?: 'SSH API',
             'status' => 'active',
         ]);
         return back()->with('success', 'API token created.');
