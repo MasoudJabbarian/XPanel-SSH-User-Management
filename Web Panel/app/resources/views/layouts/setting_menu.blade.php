@@ -10,6 +10,9 @@
             <a href="backup" class="nav-link {{ request()->segment(3) === 'backup' ? 'active' : '' }}" type="button" role="tab" aria-selected="false" tabindex="-1"><i class="ti ti-database"></i>&nbsp;&nbsp;{{__('setting-backup-menu')}}</a>
         </li>
         <li class="nav-item" role="presentation">
+            <a href="remote-backup" class="nav-link {{ request()->segment(3) === 'remote-backup' ? 'active' : '' }}" type="button" role="tab" aria-selected="false" tabindex="-1"><i class="ti ti-cloud-upload"></i>&nbsp;&nbsp;Remote Backup</a>
+        </li>
+        <li class="nav-item" role="presentation">
             <a href="api" class="nav-link {{ request()->segment(3) === 'api' ? 'active' : '' }}" type="button" role="tab" aria-selected="false" tabindex="-1"><i class="ti ti-puzzle"></i>&nbsp;&nbsp;{{__('setting-api-menu')}}</a>
         </li>
         <li class="nav-item" role="presentation">
