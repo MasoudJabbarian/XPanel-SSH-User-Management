@@ -23,6 +23,10 @@ class Users extends Model
         'referral',
         'desc'
     ];
+    protected $casts = [
+        'password' => 'encrypted',
+    ];
+
     public function traffics() {
         return $this->hasMany(Traffic::class, 'username', 'username');
     }
