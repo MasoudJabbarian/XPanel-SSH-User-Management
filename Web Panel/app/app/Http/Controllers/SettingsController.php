@@ -27,6 +27,27 @@ use Verta;
 
 class SettingsController extends Controller
 {
+    private function safeBackupPath(string $name): string
+    {
+        if ($name !== basename($name) || !preg_match('/^[A-Za-z0-9._-]+$/', $name)) {
+            abort(422, 'Invalid backup filename');
+        }
+
+        return '/var/www/html/app/storage/backup/' . $name;
+    }
+
+    private function setEnvValue(string $key, string $value): void
+    {
+        $path = '/var/www/html/app/.env';
+        $contents = file_exists($path) ? file_get_contents($path) : '';
+        $line = $key . '=' . str_replace(["\r", "\n"], '', $value);
+        $pattern = '/^' . preg_quote($key, '/') . '=.*$/m';
+        $contents = preg_match($pattern, $contents)
+            ? preg_replace($pattern, $line, $contents)
+            : rtrim($contents, "\r\n") . "\n" . $line . "\n";
+        file_put_contents($path, $contents, LOCK_EX);
+    }
+
     public function __construct() {
         $this->middleware('auth:admins');
 
@@ -424,7 +445,10 @@ class SettingsController extends Controller
         ]);
         if($request->file('file')) {
             $file = $request->file('file');
-            $filename = $file->getClientOriginalName();
+            $filename = basename($file->getClientOriginalName());
+            if (!preg_match('/^[A-Za-z0-9._-]+$/', $filename)) {
+                abort(422, 'Invalid backup filename');
+            }
             $file->move('/var/www/html/app/storage/backup/', $filename);
 
         }
@@ -437,7 +461,10 @@ class SettingsController extends Controller
         if (!is_string($name)) {
             abort(400, 'Not Valid Username');
         }
-        Process::run("rm -rf /var/www/html/app/storage/backup/".$name);
+        $path = $this->safeBackupPath($name);
+        if (is_file($path)) {
+            unlink($path);
+        }
         return redirect()->intended(route('settings', ['name' => 'backup']));
 
     }
@@ -523,8 +550,8 @@ class SettingsController extends Controller
         if (!is_string($name)) {
             abort(400, 'Not Valid Username');
         }
-        $fileName = $name;
-        $filePath = storage_path('backup/'.$fileName);
+        $fileName = basename($name);
+        $filePath = $this->safeBackupPath($fileName);
 
         if (file_exists('/var/www/html/app/storage/backup/'.$fileName)) {
             return response()->download($filePath, $fileName, [
