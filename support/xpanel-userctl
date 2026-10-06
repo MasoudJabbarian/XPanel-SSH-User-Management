@@ -111,16 +111,20 @@ case "${1:-}" in
     ;;
 
   add)
-    [[ $# -eq 4 ]] || die "usage: add USER PASSWORD MAX_LOGINS"
-    user="$2"; password="$3"; max="$4"; valid_user "$user"
+    [[ $# -eq 3 ]] || die "usage: add USER MAX_LOGINS"
+    user="$2"; max="$3"; valid_user "$user"
     [[ "$max" =~ ^[0-9]+$ ]] || die "invalid max logins"
+    IFS= read -r password || die "missing password on stdin"
+    [[ -n "$password" ]] || die "empty password"
     id "$user" &>/dev/null || useradd -m -s /usr/sbin/nologin -c "" "$user"
     printf '%s\n%s\n' "$password" "$password" | passwd "$user" >/dev/null
     /usr/local/bin/xp_user_limit add "$user" "$max"
     ;;
   password)
-    [[ $# -eq 3 ]] || die "usage: password USER PASSWORD"
-    user="$2"; password="$3"; valid_user "$user"; id "$user" &>/dev/null || die "user does not exist"
+    [[ $# -eq 2 ]] || die "usage: password USER"
+    user="$2"; valid_user "$user"; id "$user" &>/dev/null || die "user does not exist"
+    IFS= read -r password || die "missing password on stdin"
+    [[ -n "$password" ]] || die "empty password"
     printf '%s\n%s\n' "$password" "$password" | passwd "$user" >/dev/null
     ;;
   limit)
