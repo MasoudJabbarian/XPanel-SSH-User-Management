@@ -121,7 +121,7 @@ class BackupRemote extends Command
                 ? rtrim($folder, '/')
                 : rtrim(ssh2_sftp_realpath($sftp, '.'), '/') . '/' . trim($folder, '/');
 
-            if (!is_dir('ssh2.sftp://' . $sftp . $remoteFolder)) {
+            if (!is_dir('ssh2.sftp://' . intval($sftp) . $remoteFolder)) {
                 if (!@ssh2_sftp_mkdir($sftp, $remoteFolder, 0755, true)) {
                     throw new \RuntimeException('Unable to create the remote backup folder.');
                 }
@@ -129,7 +129,7 @@ class BackupRemote extends Command
 
             $remoteFile = $remoteFolder . '/' . basename($archivePath);
             $source = @fopen($archivePath, 'rb');
-            $target = @fopen('ssh2.sftp://' . $sftp . $remoteFile, 'wb');
+            $target = @fopen('ssh2.sftp://' . intval($sftp) . $remoteFile, 'wb');
 
             if (!$source || !$target) {
                 if (is_resource($source)) {
