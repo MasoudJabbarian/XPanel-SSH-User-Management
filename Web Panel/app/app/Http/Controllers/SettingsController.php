@@ -864,7 +864,7 @@ echo curl_get_contents("$site");
 
             $files = [];
             while (($name = readdir($dir)) !== false) {
-                if ($name === '.' || $name === '..' || !preg_match('/\\.sql\\.gz$/i', $name)) {
+                if ($name === '.' || $name === '..' || !preg_match('/\\.sql$/i', $name)) {
                     continue;
                 }
 
