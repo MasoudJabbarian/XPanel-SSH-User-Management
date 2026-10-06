@@ -1,4 +1,5 @@
 #!/bin/bash
+# v3.9.7 clean base
 
 #By setting DEBIAN_FRONTEND to noninteractive, any prompts or interactive dialogs from the package manager will proceed with the installation without user intervention.
 export DEBIAN_FRONTEND=noninteractive
