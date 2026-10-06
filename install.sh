@@ -242,8 +242,16 @@ startINSTALL() {
     sudo apt upgrade -y
     sudo apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
     apt-get install -y stunnel4 && apt-get install -y cmake && apt-get install -y screenfetch && apt-get install -y openssl
-    sudo apt-get -y install software-properties-common
-    sudo add-apt-repository ppa:ondrej/php -y
+    sudo apt-get -y install software-properties-common ca-certificates lsb-release
+    if [ "${version_info:-22}" -ge 26 ]; then
+      # The PHP packaging moved from the Launchpad PPA to packages.sury.org for Ubuntu 26.04+.
+      curl -fsSL -o /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb
+      dpkg -i /tmp/debsuryorg-archive-keyring.deb
+      echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
+      apt-get update -y
+    else
+      sudo add-apt-repository ppa:ondrej/php -y
+    fi
     sudo apt-get install nginx zip unzip net-tools mariadb-server -y
     sudo apt-get install php php-cli php-mbstring php-dom php-pdo php-mysql -y
     sudo apt-get install npm -y
