@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\Settings;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Process;
 
 class BackupRemote extends Command
@@ -38,7 +37,10 @@ class BackupRemote extends Command
         $defaultsPath = storage_path('app/.remote-backup-mysql-' . bin2hex(random_bytes(6)));
 
         try {
-            $password = Crypt::decryptString($settings->remote_backup_password ?? '');
+            $password = (string) ($settings->remote_backup_password ?? '');
+            if ($password === '') {
+                throw new \RuntimeException('Remote backup password is not configured.');
+            }
 
             file_put_contents($defaultsPath, implode(PHP_EOL, [
                 '[client]',
@@ -63,13 +65,15 @@ class BackupRemote extends Command
                 '--routines',
                 '--triggers',
                 $database,
-            ]);
+            ], function ($type, $output) use ($dumpPath) {
+                if ($type === \Symfony\Component\Process\Process::OUT) {
+                    file_put_contents($dumpPath, $output, FILE_APPEND);
+                }
+            });
 
             if ($result->failed()) {
                 throw new \RuntimeException(trim($result->errorOutput()) ?: 'mysqldump failed.');
             }
-
-            file_put_contents($dumpPath, $result->output());
 
             $host = trim((string) $settings->remote_backup_host);
             $folder = trim((string) ($settings->remote_backup_folder ?? ''), '/');
