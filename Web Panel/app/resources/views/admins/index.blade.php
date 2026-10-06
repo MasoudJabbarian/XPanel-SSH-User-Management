@@ -80,9 +80,9 @@
                                                     <li class="list-inline-item align-bottom" >
                                                         <button class="avtar avtar-xs btn-link-success btn-pc-default" style="border:none" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="ti ti-adjustments f-18"></i></button>
                                                         <div class="dropdown-menu">
-                                                            <form method="POST" action="{{ route('admin.active', ['username' => $admin->username]) }}" class="d-inline">@csrf<button type="submit" class="dropdown-item border-0 bg-transparent">{{__('manager-active')}}</a>
-                                                            <form method="POST" action="{{ route('admin.deactive', ['username' => $admin->username]) }}" class="d-inline">@csrf<button type="submit" class="dropdown-item border-0 bg-transparent">{{__('manager-deactive')}}</a>
-                                                            <form method="POST" action="{{ route('admin.delete', ['username' => $admin->username]) }}" class="d-inline">@csrf<button type="submit" class="dropdown-item border-0 bg-transparent">{{__('manager-delete')}}</a>
+                                                            <form method="POST" action="{{ route('admin.active', ['username' => $admin->username]) }}" class="d-inline">@csrf<button type="submit" class="dropdown-item border-0 bg-transparent">{{__('manager-active')}}</button></form>
+                                                            <form method="POST" action="{{ route('admin.deactive', ['username' => $admin->username]) }}" class="d-inline">@csrf<button type="submit" class="dropdown-item border-0 bg-transparent">{{__('manager-deactive')}}</button></form>
+                                                            <form method="POST" action="{{ route('admin.delete', ['username' => $admin->username]) }}" class="d-inline">@csrf<button type="submit" class="dropdown-item border-0 bg-transparent">{{__('manager-delete')}}</button></form>
                                                         </div>
                                                     </li>
                                                     <li class="list-inline-item align-bottom" data-bs-toggle="tooltip"
