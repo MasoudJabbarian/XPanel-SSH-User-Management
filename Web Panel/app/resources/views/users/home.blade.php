@@ -34,7 +34,7 @@
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#new-user-modal">New user</button>
         </div>
 
-        <form method="post" action="{{ route('user.action.bulk') }}">
+        <form id="bulk-form" method="post" action="{{ route('user.action.bulk') }}">
             @csrf
             <div class="d-flex gap-2 mb-3">
                 <select class="form-select" name="action" style="max-width:220px" required>
@@ -46,6 +46,7 @@
                 </select>
                 <button class="btn btn-secondary" type="submit">Apply</button>
             </div>
+        </form>
 
             <div class="table-responsive"><table class="table table-hover align-middle">
                 <thead><tr>
@@ -66,7 +67,7 @@
                         };
                     @endphp
                     <tr>
-                        <td><input class="user-check" type="checkbox" name="usernamed[]" value="{{ $user->username }}"></td>
+                        <td><input form="bulk-form" class="user-check" type="checkbox" name="usernamed[]" value="{{ $user->username }}"></td>
                         <td><strong>{{ $user->username }}</strong><br><small class="text-muted">{{ $user->password }}</small></td>
                         <td>{{ $used }} MB @if($quota > 0) / {{ $quota }} MB @endif</td>
                         <td>{{ optional($user->conections)->connection ?? 0 }} / {{ $user->multiuser }}</td>
