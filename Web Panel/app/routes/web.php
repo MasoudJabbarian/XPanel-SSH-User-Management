@@ -6,9 +6,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\OnlineController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\AdminsController;
-use App\Http\Controllers\ApiController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\FixerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -55,8 +53,8 @@ Route::prefix("$panel")->group(function()
     Route::get('/user/edit/{username}',[UserController::class,'edit'])->name('user.edit');
     Route::post('/user/edit',[UserController::class,'update'])->name('user.update');
     Route::get('/online',[OnlineController::class,'index'])->name('online');
-    Route::get('/online/id/{pid}',[OnlineController::class,'kill_pid'])->name('online.kill.pid');
-    Route::get('/online/user/{username}',[OnlineController::class,'kill_user'])->name('online.kill.username');
+    Route::post('/online/id/{pid}',[OnlineController::class,'kill_pid'])->name('online.kill.pid');
+    Route::post('/online/user/{username}',[OnlineController::class,'kill_user'])->name('online.kill.username');
     Route::get('/checkip',[OnlineController::class,'filtering'])->name('filtering');
     Route::get('/settings',[SettingsController::class,'defualt'])->name('setting');
     Route::get('/settings/{name}',[SettingsController::class,'index'])->name('settings');
@@ -74,20 +72,11 @@ Route::prefix("$panel")->group(function()
     Route::post('/settings/api/delete/{id}',[SettingsController::class,'delete_api'])->name('settings.token.delete');
     Route::get('/managers',[AdminsController::class,'index'])->name('admins');
     Route::post('/managers',[AdminsController::class,'insert'])->name('admin.new');
-    Route::get('/managers/active/{username}',[AdminsController::class,'activeadmin'])->name('admin.active');
-    Route::get('/managers/deactive/{username}',[AdminsController::class,'deactiveadmin'])->name('admin.deactive');
-    Route::get('/managers/delete/{username}',[AdminsController::class,'deleteadmin'])->name('admin.delete');
+    Route::post('/managers/active/{username}',[AdminsController::class,'activeadmin'])->name('admin.active');
+    Route::post('/managers/deactive/{username}',[AdminsController::class,'deactiveadmin'])->name('admin.deactive');
+    Route::post('/managers/delete/{username}',[AdminsController::class,'deleteadmin'])->name('admin.delete');
     Route::get('/managers/edit/{username}',[AdminsController::class,'edit'])->name('admin.edit');
     Route::post('/manager/update',[AdminsController::class,'update'])->name('admin.update');
-    Route::get('/logout',[LoginController::class,'logout'])->name('user.logout');
-
-
+    Route::post('/logout',[LoginController::class,'logout'])->name('user.logout');
 
 });
-
-Route::prefix('fixer')->middleware('auth:admins')->group(function() {
-    Route::get('/exp', [FixerController::class, 'cronexp'])->name('exp');
-    Route::get('/multiuser', [FixerController::class, 'multiuser'])->name('multiuser');
-    Route::get('/other', [FixerController::class, 'other'])->name('other');
-});
-Auth::routes();
