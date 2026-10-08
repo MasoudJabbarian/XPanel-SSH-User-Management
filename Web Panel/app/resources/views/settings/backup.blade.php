@@ -27,6 +27,21 @@
                         @include('layouts.setting_menu')
                         <div class="tab-content" id="myTabContent">
                             <div class="card-body">
+                                @if(session('success'))
+                                    <div class="alert alert-success">{{ session('success') }}</div>
+                                @endif
+                                @if($errors->any())
+                                    <div class="alert alert-danger">
+                                        <pre class="mb-0" style="white-space:pre-wrap;word-break:break-word;">{{ $errors->first() }}</pre>
+                                    </div>
+                                @endif
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                                    <form method="post" action="{{ route('settings.remote-backup.restore') }}" onsubmit="return confirm('پنج فایل آخر بکاپ از سرور بکاپ دریافت و در لیست بکاپ‌ها قرار داده شوند؟');">
+                                        @csrf
+                                        <button class="btn btn-outline-primary" type="submit">دریافت ۵ بکاپ آخر از سرور بکاپ</button>
+                                    </form>
+                                    <small class="text-muted">۵ فایل SQL آخر از مسیر ثابت <code>/var/backups/xpanel</code> دریافت می‌شوند و بعد در همین لیست نمایش داده خواهند شد.</small>
+                                </div>
                                 <div class="card-header">
                                     <h5>{{__('setting-backup-bot_title')}}</h5>
                                 </div>
