@@ -937,10 +937,6 @@ echo curl_get_contents("$site");
         $this->check();
 
         $settings = Settings::firstOrFail();
-        if (!$settings->remote_backup_enabled) {
-            return redirect()->route('settings.remote-backup')
-                ->withErrors(['remote_backup' => 'Automatic remote backup is disabled. Enable it before running a manual backup.']);
-        }
 
         try {
             $exitCode = Artisan::call('backup:remote', ['--force' => true]);
