@@ -50,13 +50,48 @@ class OnlineController extends Controller
     public function index()
     {
         $this->check();
-        $duplicate = [];
         $data = [];
-        $total = [];
+        $seen = [];
 
-        $list = Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'online-port', (string) env('PORT_SSH', 22)]);
-        $output = $list->output();
-        $onlineuserlist = preg_split("/\r\n|\n|\r/", $output);
+        $result = Process::run([
+            'sudo',
+            '/usr/local/sbin/xpanel-userctl',
+            'online-port',
+            (string) env('PORT_SSH', 22),
+        ]);
+
+        foreach (preg_split("/\\r\\n|\\n|\\r/", trim($result->output())) as $line) {
+            $fields = preg_split('/\\s+/', trim($line));
+            if (count($fields) < 9) {
+                continue;
+            }
+
+            $username = $fields[2] ?? '';
+            $pid = $fields[1] ?? '';
+            if ($username === '' || in_array($username, ['root', 'sshd'], true) || !ctype_digit($pid)) {
+                continue;
+            }
+
+            $connection = $fields[count($fields) - 1] ?? '';
+            $ip = '';
+            if (str_contains($connection, '->')) {
+                $remote = substr($connection, strrpos($connection, '->') + 2);
+                $remote = preg_replace('/:\\d+$/', '', $remote);
+                $ip = trim($remote, '[]');
+            }
+
+            $color = isset($seen[$username]) ? '#dc2626' : '#269393';
+            $seen[$username] = true;
+
+            $data[] = [
+                'username' => $username,
+                'color' => $color,
+                'ip' => $ip,
+                'pid' => $pid,
+                'protocol' => 'SSH',
+            ];
+        }
+
         return view('users.online', compact('data'));
     }
 }
