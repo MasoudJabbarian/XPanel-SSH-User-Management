@@ -148,7 +148,7 @@ class BackupRemote extends Command
             // and leave the backup status stuck at "running" indefinitely.
             // Use OpenSSH through sshpass with hard connection/process timeouts instead.
             if (!is_executable('/usr/bin/sshpass')) {
-                throw new \\RuntimeException('The sshpass package is required for remote backups. Install it with: sudo apt-get install -y sshpass');
+                throw new \RuntimeException('The sshpass package is required for remote backups. Install it with: sudo apt-get install -y sshpass');
             }
 
             $sshOptions = [
@@ -172,7 +172,7 @@ class BackupRemote extends Command
 
             if ($mkdir->failed()) {
                 $detail = trim($mkdir->errorOutput()) ?: trim($mkdir->output()) ?: 'unknown SSH error';
-                throw new \\RuntimeException(
+                throw new \RuntimeException(
                     "Remote SSH command failed for {$username}@{$host}:{$port}: {$detail}"
                 );
             }
@@ -190,7 +190,7 @@ class BackupRemote extends Command
 
             if ($scp->failed()) {
                 $detail = trim($scp->errorOutput()) ?: trim($scp->output()) ?: 'unknown SCP error';
-                throw new \\RuntimeException(
+                throw new \RuntimeException(
                     "Remote backup upload failed for {$username}@{$host}:{$port}: {$detail}"
                 );
             }
@@ -204,13 +204,13 @@ class BackupRemote extends Command
 
             if ($verify->failed()) {
                 $detail = trim($verify->errorOutput()) ?: trim($verify->output()) ?: 'remote file verification failed';
-                throw new \\RuntimeException("Remote backup upload verification failed: {$detail}");
+                throw new \RuntimeException("Remote backup upload verification failed: {$detail}");
             }
 
             $remoteSize = (int) trim($verify->output());
             $localSize = filesize($dumpPath);
             if ($localSize === false || $remoteSize !== (int) $localSize) {
-                throw new \\RuntimeException(
+                throw new \RuntimeException(
                     'Remote upload size mismatch. Expected ' . (int) $localSize . ' bytes, remote file is ' . $remoteSize . ' bytes.'
                 );
             }
