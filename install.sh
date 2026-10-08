@@ -77,9 +77,14 @@ destination_directory="/var/www/"
 
   # Check if MySQL is installed
   if dpkg-query -W -f='${Status}' mariadb-server 2>/dev/null | grep -q "install ok installed"; then
-    adminuser=$(mysql -N -e "use XPanel_plus; select username from admins where permission='admin';")
-    adminpass=$(mysql -N -e "use XPanel_plus; select username from admins where permission='admin';")
-    ssh_tls_port=$(mysql -N -e "use XPanel_plus; select tls_port from settings where id='1';")
+    # Preserve existing panel settings when reinstalling, but ignore a missing database/table.
+    if mysql -N -e "USE XPanel_plus; SELECT 1 FROM admins LIMIT 1;" >/dev/null 2>&1; then
+      adminuser=$(mysql -N -e "USE XPanel_plus; SELECT username FROM admins WHERE permission='admin' LIMIT 1;" 2>/dev/null)
+      adminpass=$(mysql -N -e "USE XPanel_plus; SELECT password FROM admins WHERE permission='admin' LIMIT 1;" 2>/dev/null)
+    fi
+    if mysql -N -e "USE XPanel_plus; SELECT 1 FROM settings WHERE id='1' LIMIT 1;" >/dev/null 2>&1; then
+      ssh_tls_port=$(mysql -N -e "USE XPanel_plus; SELECT tls_port FROM settings WHERE id='1' LIMIT 1;" 2>/dev/null)
+    fi
   fi
 
   folder_path_cp="/var/www/html/cp"
@@ -680,13 +685,14 @@ END
 }
 
 checkDATABASE() {
-  mysql -e "create database XPanel_plus;" &
+  # Reinstall-safe database/user setup. An existing XPanel_plus database is valid.
+  mysql -e "CREATE DATABASE IF NOT EXISTS XPanel_plus;" &
   wait
-  mysql -e "CREATE USER '${adminusername}'@'localhost' IDENTIFIED BY '${adminpassword}';" &
-  wait
-  mysql -e "GRANT ALL ON *.* TO '${adminusername}'@'localhost';" &
+  mysql -e "CREATE USER IF NOT EXISTS '${adminusername}'@'localhost' IDENTIFIED BY '${adminpassword}';" &
   wait
   mysql -e "ALTER USER '${adminusername}'@'localhost' IDENTIFIED BY '${adminpassword}';" &
+  wait
+  mysql -e "GRANT ALL ON XPanel_plus.* TO '${adminusername}'@'localhost';" &
   wait
   sed -i "s/DB_USERNAME=.*/DB_USERNAME=$adminusername/g" /var/www/html/app/.env
   sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$adminpassword/g" /var/www/html/app/.env
@@ -773,7 +779,7 @@ ENDOFFILE
   wait
   chmod +x /var/www/html/other.sh
   
-  mkdir /var/www/html/app/storage/banner
+  mkdir -p /var/www/html/app/storage/banner
   chmod 777 /etc/ssh/sshd_config
   chmod 777 /var/www/html/app/storage/banner
   if ! grep -q -E "#?Match all" /etc/ssh/sshd_config; then
