@@ -16,6 +16,7 @@ use App\Models\Ipadapter;
 use App\Models\Adapterlist;
 use App\Models\License;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
@@ -928,6 +929,34 @@ echo curl_get_contents("$site");
         } catch (\Throwable $e) {
             return redirect()->route('settings.remote-backup')
                 ->withErrors(['remote_backup' => $e->getMessage()]);
+        }
+    }
+
+    public function remote_backup_run(Request $request)
+    {
+        $this->check();
+
+        $settings = Settings::firstOrFail();
+        if (!$settings->remote_backup_enabled) {
+            return redirect()->route('settings.remote-backup')
+                ->withErrors(['remote_backup' => 'Automatic remote backup is disabled. Enable it before running a manual backup.']);
+        }
+
+        try {
+            $exitCode = Artisan::call('backup:remote', ['--force' => true]);
+            $settings->refresh();
+
+            if ($exitCode === 0 && $settings->remote_backup_last_status === 'success') {
+                return redirect()->route('settings.remote-backup')
+                    ->with('success', 'Manual backup completed and was uploaded to the remote server.');
+            }
+
+            $message = $settings->remote_backup_last_message ?: trim(Artisan::output()) ?: 'Remote backup failed.';
+            return redirect()->route('settings.remote-backup')
+                ->withErrors(['remote_backup' => $message]);
+        } catch (\Throwable $e) {
+            return redirect()->route('settings.remote-backup')
+                ->withErrors(['remote_backup' => 'Manual remote backup failed: ' . $e->getMessage()]);
         }
     }
 
