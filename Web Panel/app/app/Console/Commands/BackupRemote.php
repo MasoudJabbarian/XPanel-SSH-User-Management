@@ -15,7 +15,7 @@ class BackupRemote extends Command
     {
         $settings = Settings::first();
 
-        if (!$settings || !$settings->remote_backup_enabled) {
+        if (!$settings || (!$settings->remote_backup_enabled && !$this->option('force'))) {
             return self::SUCCESS;
         }
 
