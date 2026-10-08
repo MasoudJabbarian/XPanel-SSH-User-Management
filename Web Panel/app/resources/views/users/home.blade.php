@@ -56,7 +56,7 @@
                 <tbody>
                 @forelse($users as $user)
                     @php
-                        $used = (int) optional($user->traffics->first())->total;
+                        $used = (float) optional($user->traffics->first())->total;
                         $quota = (int) $user->traffic;
                         $statusClass = match($user->status) {
                             'active' => 'success',
@@ -69,7 +69,7 @@
                     <tr>
                         <td><input form="bulk-form" class="user-check" type="checkbox" name="usernamed[]" value="{{ $user->username }}"></td>
                         <td><strong>{{ $user->username }}</strong><br><small class="text-muted">{{ $user->password }}</small></td>
-                        <td>{{ $used }} MB @if($quota > 0) / {{ $quota }} MB @endif</td>
+                        <td>{{ number_format($used, 2) }} MB @if($quota > 0) / {{ $quota }} MB @endif</td>
                         <td>{{ optional($user->conections)->connection ?? 0 }} / {{ $user->multiuser }}</td>
                         <td>{{ $user->end_date ?: 'Unlimited' }}</td>
                         <td><span class="badge bg-light-{{ $statusClass }}">{{ ucfirst($user->status) }}</span></td>
