@@ -55,7 +55,6 @@ Route::prefix("$panel")->group(function()
     Route::get('/online',[OnlineController::class,'index'])->name('online');
     Route::post('/online/id/{pid}',[OnlineController::class,'kill_pid'])->name('online.kill.pid');
     Route::post('/online/user/{username}',[OnlineController::class,'kill_user'])->name('online.kill.username');
-    Route::get('/checkip',[OnlineController::class,'filtering'])->name('filtering');
     Route::get('/settings',[SettingsController::class,'defualt'])->name('setting');
     Route::get('/settings/{name}',[SettingsController::class,'index'])->name('settings');
     Route::get('/settings/mod/{name}',[SettingsController::class,'mod'])->name('mod');
