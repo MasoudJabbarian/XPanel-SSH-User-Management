@@ -11,6 +11,10 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule): void
     {
+        $schedule->command('traffic:collect')
+            ->everyMinute()
+            ->withoutOverlapping(2);
+
         $schedule->call(function (): void {
             Users::where('status', 'active')
                 ->whereNotNull('end_date')
