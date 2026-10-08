@@ -72,30 +72,42 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-
-        // Validate the form data
         $this->validate($request, [
-            'username'   => 'required',
+            'username' => 'required',
             'password' => 'required'
         ]);
-        // Attempt to log the user in
-        if (Auth::guard('admins')->attempt(['username' => $request->username, 'password' => $request->password,'status'=>'active'])) {
-            // if successful, then redirect to their intended location
+
+        if (Auth::guard('admins')->attempt([
+            'username' => $request->username,
+            'password' => $request->password,
+            'status' => 'active'
+        ])) {
             return redirect()->intended(route('dashboard'));
         }
-        else
-        {
-            $pssword=Hash::make($request->password);
-            $count_admin = Admins::where('username',$request->username)->first();
-            if($count_admin->status!='active') {
-                return redirect()->back()->with('alert', __('login-error-deactive'));
-            }
-            if($count_admin->password!=$pssword) {
-                return redirect()->back()->with('alert', __('login-error-password'));
-            }
+
+        $admin = Admins::where('username', $request->username)->first();
+
+        if (!$admin) {
+            return redirect()->back()
+                ->withInput($request->only('username', 'remember'))
+                ->with('alert', __('login-error-password'));
         }
-        // if unsuccessful, then redirect back to the login with the form data
-        return redirect()->back()->withInput($request->only('username', 'remember'));
+
+        if ($admin->status !== 'active') {
+            return redirect()->back()
+                ->withInput($request->only('username', 'remember'))
+                ->with('alert', __('login-error-deactive'));
+        }
+
+        if (!Hash::check($request->password, $admin->password)) {
+            return redirect()->back()
+                ->withInput($request->only('username', 'remember'))
+                ->with('alert', __('login-error-password'));
+        }
+
+        return redirect()->back()
+            ->withInput($request->only('username', 'remember'))
+            ->with('alert', __('login-error-password'));
     }
 
     public function logout()
