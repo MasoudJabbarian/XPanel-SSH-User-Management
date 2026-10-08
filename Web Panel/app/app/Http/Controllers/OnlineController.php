@@ -4,9 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Process\ProcessResult;
 use Auth;
-use Illuminate\Support\Facades\DB;
 
 
 class OnlineController extends Controller
@@ -31,8 +29,8 @@ class OnlineController extends Controller
     }
     public function kill_pid(Request $request,$pid)
     {
-        if (!is_numeric($pid)) {
-            abort(400, 'Not Valid Username');
+        if (!ctype_digit((string) $pid)) {
+            abort(422, 'Invalid PID');
         }
         Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-pid', (string) $pid]);
         return redirect()->back()->with('success', 'Killed');
@@ -41,9 +39,6 @@ class OnlineController extends Controller
     public function kill_user(Request $request,$username)
     {
         $this->assertLinuxUsername($username);
-        if (!is_string($username)) {
-            abort(400, 'Not Valid Username');
-        }
         Process::run(['sudo', '/usr/local/sbin/xpanel-userctl', 'kill-user', $username]);
         return redirect()->back()->with('success', 'Killed');
     }
