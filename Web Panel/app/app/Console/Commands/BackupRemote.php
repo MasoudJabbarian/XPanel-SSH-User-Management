@@ -143,86 +143,75 @@ class BackupRemote extends Command
             }
             fclose($socket);
 
-            $sshWarning = null;
-            set_error_handler(function ($severity, $message) use (&$sshWarning) {
-                $sshWarning = $message;
-                return true;
-            });
-
-            try {
-                $connection = ssh2_connect($host, $port);
-            } finally {
-                restore_error_handler();
+            // Do not use ssh2_auth_password() here. On some SSH/PAM/network
+            // combinations the PHP SSH2 extension can block inside the C extension
+            // and leave the backup status stuck at "running" indefinitely.
+            // Use OpenSSH through sshpass with hard connection/process timeouts instead.
+            if (!is_executable('/usr/bin/sshpass')) {
+                throw new \\RuntimeException('The sshpass package is required for remote backups. Install it with: sudo apt-get install -y sshpass');
             }
 
-            if (!$connection) {
-                $detail = $sshWarning ? ' ' . $sshWarning : '';
-                throw new \RuntimeException(
-                    "SSH handshake with {$host}:{$port} failed." . $detail . "\n\nبرای فعال‌کردن همین پورت روی سرور بکاپ:\n" .
-                    "sudo sed -i -E 's/^#?Port .*/Port {$port}/' /etc/ssh/sshd_config\n" .
-                    "sudo ufw allow {$port}/tcp 2>/dev/null || true\n" .
-                    "sudo systemctl restart ssh"
+            $sshOptions = [
+                '-o', 'ConnectTimeout=8',
+                '-o', 'ConnectionAttempts=1',
+                '-o', 'ServerAliveInterval=5',
+                '-o', 'ServerAliveCountMax=1',
+                '-o', 'StrictHostKeyChecking=accept-new',
+                '-p', (string) $port,
+            ];
+
+            $sshBase = array_merge([
+                '/usr/bin/sshpass', '-e',
+                '/usr/bin/ssh',
+            ], $sshOptions);
+
+            $mkdirCommand = 'mkdir -p -- ' . escapeshellarg($remoteFolder) . ' && test -d -- ' . escapeshellarg($remoteFolder);
+            $mkdir = Process::env(['SSHPASS' => $password])
+                ->timeout(20)
+                ->run(array_merge($sshBase, [$username . '@' . $host, $mkdirCommand]));
+
+            if ($mkdir->failed()) {
+                $detail = trim($mkdir->errorOutput()) ?: trim($mkdir->output()) ?: 'unknown SSH error';
+                throw new \\RuntimeException(
+                    "Remote SSH command failed for {$username}@{$host}:{$port}: {$detail}"
                 );
-            }
-
-            if (function_exists('ssh2_set_timeout')) {
-                ssh2_set_timeout($connection, 10);
-            }
-
-            if (!@ssh2_auth_password($connection, $username, $password)) {
-                throw new \RuntimeException(
-                    "SSH authentication failed for {$username}@{$host}:{$port}. The network connection is working, but the username/password was rejected."
-                );
-            }
-
-            $sftp = @ssh2_sftp($connection);
-            if (!$sftp) {
-                throw new \RuntimeException(
-                    "SSH login succeeded, but the SFTP subsystem could not be initialized on {$host}:{$port}."
-                );
-            }
-
-            $home = @ssh2_sftp_realpath($sftp, '.');
-            if ($folder[0] === '/') {
-                $remoteFolder = rtrim($folder, '/');
-            } else {
-                if ($home === false || $home === '') {
-                    throw new \RuntimeException('Unable to resolve the remote SSH home directory for the relative backup folder.');
-                }
-                $remoteFolder = rtrim($home, '/') . '/' . trim($folder, '/');
-            }
-
-            if (!is_dir('ssh2.sftp://' . intval($sftp) . $remoteFolder)) {
-                if (!@ssh2_sftp_mkdir($sftp, $remoteFolder, 0755, true)) {
-                    throw new \RuntimeException('Unable to create the remote backup folder: ' . $remoteFolder . "\n\nبرای آماده‌سازی سرور بکاپ، روی همان سرور اجرا کنید:\n" .
-                        "sudo mkdir -p /var/backups/xpanel\n" .
-                        "sudo chown -R {$username}:{$username} /var/backups/xpanel\n" .
-                        "sudo chmod 750 /var/backups/xpanel");
-                }
             }
 
             $remoteFile = $remoteFolder . '/' . basename($dumpPath);
-            $source = @fopen($dumpPath, 'rb');
-            $target = @fopen('ssh2.sftp://' . intval($sftp) . $remoteFile, 'wb');
+            $scp = Process::env(['SSHPASS' => $password])
+                ->timeout(60)
+                ->run(array_merge([
+                    '/usr/bin/sshpass', '-e',
+                    '/usr/bin/scp',
+                ], $sshOptions, [
+                    $dumpPath,
+                    $username . '@' . $host . ':' . $remoteFile,
+                ]));
 
-            if (!$source || !$target) {
-                if (is_resource($source)) {
-                    fclose($source);
-                }
-                if (is_resource($target)) {
-                    fclose($target);
-                }
-                throw new \RuntimeException('Unable to open the SFTP backup destination: ' . $remoteFile);
+            if ($scp->failed()) {
+                $detail = trim($scp->errorOutput()) ?: trim($scp->output()) ?: 'unknown SCP error';
+                throw new \\RuntimeException(
+                    "Remote backup upload failed for {$username}@{$host}:{$port}: {$detail}"
+                );
             }
 
-            $copied = stream_copy_to_stream($source, $target);
-            fclose($source);
-            fclose($target);
+            $verify = Process::env(['SSHPASS' => $password])
+                ->timeout(20)
+                ->run(array_merge($sshBase, [
+                    $username . '@' . $host,
+                    'test -f ' . escapeshellarg($remoteFile) . ' && stat -c %s ' . escapeshellarg($remoteFile),
+                ]));
 
+            if ($verify->failed()) {
+                $detail = trim($verify->errorOutput()) ?: trim($verify->output()) ?: 'remote file verification failed';
+                throw new \\RuntimeException("Remote backup upload verification failed: {$detail}");
+            }
+
+            $remoteSize = (int) trim($verify->output());
             $localSize = filesize($dumpPath);
-            if ($copied === false || $localSize === false || (int) $copied !== (int) $localSize) {
-                throw new \RuntimeException(
-                    'Remote upload was incomplete. Expected ' . (int) $localSize . ' bytes, uploaded ' . (int) $copied . ' bytes.'
+            if ($localSize === false || $remoteSize !== (int) $localSize) {
+                throw new \\RuntimeException(
+                    'Remote upload size mismatch. Expected ' . (int) $localSize . ' bytes, remote file is ' . $remoteSize . ' bytes.'
                 );
             }
 
