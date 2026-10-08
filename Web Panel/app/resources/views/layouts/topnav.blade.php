@@ -133,14 +133,6 @@
                     <span class="badge p-1 color-block bg-gray-500 border me-1">RAM Usage: <span id="ramUsage">0%</span></span>
                 </li>
                 <li class="dropdown pc-h-item">
-                    <a href="https://github.com/xpanel-cp/XPanel-SSH-User-Management" target="_blank">
-                        <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/xpanel-cp/XPanel-SSH-User-Management?style=social&link=left">
-                    </a>
-                </li>
-                <li class="dropdown pc-h-item">
-                    <a href="https://plisio.net/donate/KL6W5z8k" target="_blank"><span class="badge bg-light-primary rounded-pill f-12"><i class="fas fa-donate"></i>&nbsp;{{__('donate')}}</span></a>
-                </li>
-                <li class="dropdown pc-h-item">
                     <a class="pc-head-link dropdown-toggle arrow-none me-0" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
                         <svg class="pc-icon">
                             <use xlink:href="#custom-sun-1"></use>
