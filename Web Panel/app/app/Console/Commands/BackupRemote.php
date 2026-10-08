@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Process;
 
 class BackupRemote extends Command
 {
+    private const REMOTE_BACKUP_FOLDER = '/var/backups/xpanel';
     protected $signature = 'backup:remote {--force : Run immediately and ignore the configured interval}';
     protected $description = 'Create and upload a remote XPanel database backup over SSH/SFTP';
 
@@ -65,7 +66,7 @@ class BackupRemote extends Command
             }
 
             $host = trim($host, '/');
-            $folder = trim((string) ($settings->remote_backup_folder ?? ''));
+            $folder = self::REMOTE_BACKUP_FOLDER;
             $username = trim((string) $settings->remote_backup_username);
             $password = (string) $settings->remote_backup_password;
             $port = $configuredPort;
@@ -75,11 +76,7 @@ class BackupRemote extends Command
             }
 
             if ($folder === '') {
-                throw new \RuntimeException('Remote backup folder is required.');
-            }
-
-            if (str_contains($folder, '..')) {
-                throw new \RuntimeException('Remote backup folder cannot contain "..".');
+                throw new \RuntimeException('Remote backup folder is not configured.');
             }
 
             if ($port < 1 || $port > 65535) {
@@ -125,11 +122,7 @@ class BackupRemote extends Command
             }
 
             if (!is_dir($localBackupDir) && !mkdir($localBackupDir, 0755, true) && !is_dir($localBackupDir)) {
-                throw new \RuntimeException('Unable to create the local backup folder.');
-            }
-
-            if (!copy($dumpPath, $localBackupPath)) {
-                throw new \RuntimeException('Unable to save the backup in the local backup list.');
+                throw new \RuntimeException('Unable to create the local backup folder. Run: sudo mkdir -p /var/www/html/app/storage/app/backup && sudo chown -R www-data:www-data /var/www/html/app/storage/app/backup');
             }
 
             // First check the actual TCP path. This turns the previous generic
@@ -139,8 +132,13 @@ class BackupRemote extends Command
             $socket = @fsockopen($host, $port, $errno, $errstr, 8);
             if (!$socket) {
                 $detail = trim($errstr) !== '' ? $errstr . ' (' . $errno . ')' : 'unknown socket error';
+                $hint = "\n\nاگر SSH روی این پورت در سرور بکاپ در دسترس نیست، روی سرور بکاپ اجرا کنید:\n" .
+                    "sudo sed -i -E 's/^#?Port .*/Port {$port}/' /etc/ssh/sshd_config\n" .
+                    "sudo ufw allow {$port}/tcp 2>/dev/null || true\n" .
+                    "sudo systemctl restart ssh\n" .
+                    "سپس همین پورت {$port} را در XPanel وارد کنید.";
                 throw new \RuntimeException(
-                    "TCP connection to backup server {$host}:{$port} failed: {$detail}. Check DNS, firewall rules and that SSH is listening on this port."
+                    "TCP connection to backup server {$host}:{$port} failed: {$detail}. Check DNS, firewall rules and that SSH is listening on this port." . $hint
                 );
             }
             fclose($socket);
@@ -160,7 +158,10 @@ class BackupRemote extends Command
             if (!$connection) {
                 $detail = $sshWarning ? ' ' . $sshWarning : '';
                 throw new \RuntimeException(
-                    "SSH handshake with {$host}:{$port} failed." . $detail
+                    "SSH handshake with {$host}:{$port} failed." . $detail . "\n\nبرای فعال‌کردن همین پورت روی سرور بکاپ:\n" .
+                    "sudo sed -i -E 's/^#?Port .*/Port {$port}/' /etc/ssh/sshd_config\n" .
+                    "sudo ufw allow {$port}/tcp 2>/dev/null || true\n" .
+                    "sudo systemctl restart ssh"
                 );
             }
 
@@ -222,9 +223,21 @@ class BackupRemote extends Command
                 );
             }
 
+            if (!copy($dumpPath, $localBackupPath)) {
+                // Remote upload already succeeded; keep the remote backup successful
+                // but report the local archive problem clearly for the backup list.
+                $localHint = 'Local backup archive could not be saved. Run: sudo mkdir -p /var/www/html/app/storage/app/backup && sudo chown -R www-data:www-data /var/www/html/app/storage/app/backup';
+                $settings->update([
+                    'remote_backup_last_status' => 'success',
+                    'remote_backup_last_message' => 'Backup uploaded successfully via SFTP, but local backup-list copy failed. ' . $localHint,
+                ]);
+                $this->warn($localHint);
+                return self::SUCCESS;
+            }
+
             $settings->update([
                 'remote_backup_last_status' => 'success',
-                'remote_backup_last_message' => 'Backup uploaded successfully via SFTP.',
+                'remote_backup_last_message' => 'Backup uploaded successfully via SFTP and saved in the local backup list.',
             ]);
 
             return self::SUCCESS;
