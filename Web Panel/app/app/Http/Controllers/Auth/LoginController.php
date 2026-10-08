@@ -23,50 +23,8 @@ class LoginController extends Controller
 
     public function showLoginForm()
     {
-        $pssword= env('DB_PASSWORD');
-        $pssword=Hash::make($pssword);
-        $check_user = Admins::where('username',env('DB_USERNAME'))->count();
-        if ($check_user > 0) {
-            Admins::where('username', env('DB_USERNAME'))->update(['password' => $pssword]);
-        }
-        else
-        {
-            Admins::create([
-                'username' => env('DB_USERNAME'),
-                'password' => $pssword,
-                'permission' => 'admin',
-                'credit' => '0',
-                'status' => 'active'
-            ]);
-        }
-
-        $tableName = 'admins';
-        $newColumnName = 'end_date';
-        if (!Schema::hasColumn($tableName, $newColumnName)) {
-            Schema::table($tableName, function (Blueprint $table) use ($newColumnName) {
-                $table->string($newColumnName)->after('credit')->nullable();
-            });
-
-            sleep(1);
-        }
-        $tableName = 'admins';
-        $newColumnName = 'count_account';
-        if (!Schema::hasColumn($tableName, $newColumnName)) {
-            Schema::table($tableName, function (Blueprint $table) use ($newColumnName) {
-                $table->string($newColumnName)->after('end_date')->nullable();
-            });
-
-            sleep(1);
-        }
-        $tableName = 'singboxes';
-        $newColumnName = 'sni';
-        if (!Schema::hasColumn($tableName, $newColumnName)) {
-            Schema::table($tableName, function (Blueprint $table) use ($newColumnName) {
-                $table->string($newColumnName)->after('desc')->nullable();
-            });
-
-            sleep(1);
-        }
+        // Do not create or overwrite the admin account on every login-page visit.
+        // The installer is responsible for creating the initial admin account.
         return view('auth.login');
     }
 
@@ -99,7 +57,7 @@ class LoginController extends Controller
                 ->with('alert', __('login-error-deactive'));
         }
 
-        if (!Hash::check($request->password, $admin->password)) {
+        if (!$admin || !Hash::check($request->password, (string) $admin->password)) {
             return redirect()->back()
                 ->withInput($request->only('username', 'remember'))
                 ->with('alert', __('login-error-password'));
