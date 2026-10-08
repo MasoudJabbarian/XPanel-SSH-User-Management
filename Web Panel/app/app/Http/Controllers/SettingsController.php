@@ -888,7 +888,7 @@ echo curl_get_contents("$site");
             $files = array_slice($files, 0, 5);
 
             if (!$files) {
-                throw new \RuntimeException('No .sql.gz backup files were found on the backup server.');
+                throw new \RuntimeException('No .sql backup files were found on the backup server.');
             }
 
             $localFolder = storage_path('app/backup');
