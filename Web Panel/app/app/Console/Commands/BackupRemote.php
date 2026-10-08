@@ -194,7 +194,10 @@ class BackupRemote extends Command
 
             if (!is_dir('ssh2.sftp://' . intval($sftp) . $remoteFolder)) {
                 if (!@ssh2_sftp_mkdir($sftp, $remoteFolder, 0755, true)) {
-                    throw new \RuntimeException('Unable to create the remote backup folder: ' . $remoteFolder);
+                    throw new \RuntimeException('Unable to create the remote backup folder: ' . $remoteFolder . "\n\nبرای آماده‌سازی سرور بکاپ، روی همان سرور اجرا کنید:\n" .
+                        "sudo mkdir -p /var/backups/xpanel\n" .
+                        "sudo chown -R {$username}:{$username} /var/backups/xpanel\n" .
+                        "sudo chmod 750 /var/backups/xpanel");
                 }
             }
 
