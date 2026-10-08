@@ -261,7 +261,7 @@ startINSTALL() {
     sudo apt-get install coreutils
     apt install curl -y
     apt install git cmake -y
-    apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl php8.1-ssh2 cron -y
+    apt install php8.1 php8.1-mysql php8.1-xml php8.1-curl php8.1-ssh2 sshpass cron -y
     sudo apt install php8.1-fpm -y
     sudo apt install php8.1 php8.1-cli php8.1-common php8.1-opcache php8.1-mysql php8.1-mbstring php8.1-zip php8.1-intl -y
     wait
@@ -1006,3 +1006,4 @@ check_install php8.1-xml
 check_install php8.1-curl
 check_install cron
 check_install nethogs
+check_install sshpass
