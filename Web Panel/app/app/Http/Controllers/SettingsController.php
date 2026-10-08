@@ -28,6 +28,7 @@ use Verta;
 
 class SettingsController extends Controller
 {
+    private const REMOTE_BACKUP_FOLDER = '/var/backups/xpanel';
     public function __construct() {
         $this->middleware('auth:admins');
 
@@ -827,22 +828,38 @@ echo curl_get_contents("$site");
             $host = trim((string) $settings->remote_backup_host);
             $host = preg_replace('#^ssh://#i', '', $host);
             $host = trim($host, '/');
-            $folder = trim((string) ($settings->remote_backup_folder ?? ''));
+            $folder = self::REMOTE_BACKUP_FOLDER;
             $username = trim((string) $settings->remote_backup_username);
             $password = (string) $settings->remote_backup_password;
             $port = (int) $settings->remote_backup_port ?: 22;
 
-            if ($host === '' || $folder === '' || $username === '' || $password === '') {
+            if ($host === '' || $username === '' || $password === '') {
                 throw new \RuntimeException('Remote backup settings are incomplete.');
             }
 
-            if (str_contains($folder, '..')) {
-                throw new \RuntimeException('Remote backup folder cannot contain "..".');
+            $errno = 0;
+            $errstr = '';
+            $socket = @fsockopen($host, $port, $errno, $errstr, 8);
+            if (!$socket) {
+                $detail = trim($errstr) !== '' ? $errstr . ' (' . $errno . ')' : 'unknown socket error';
+                throw new \RuntimeException(
+                    "TCP connection to backup server {$host}:{$port} failed: {$detail}.\n\nبرای فعال‌کردن SSH روی همین پورت در سرور بکاپ اجرا کنید:\n" .
+                    "sudo sed -i -E 's/^#?Port .*/Port {$port}/' /etc/ssh/sshd_config\n" .
+                    "sudo ufw allow {$port}/tcp 2>/dev/null || true\n" .
+                    "sudo systemctl restart ssh\n" .
+                    "سپس همین پورت {$port} را در XPanel وارد کنید."
+                );
             }
+            fclose($socket);
 
             $connection = @ssh2_connect($host, $port);
             if (!$connection) {
-                throw new \RuntimeException('Unable to connect to the backup server over SSH.');
+                throw new \RuntimeException(
+                    "SSH handshake with {$host}:{$port} failed.\n\nبرای فعال‌کردن SSH روی همین پورت در سرور بکاپ اجرا کنید:\n" .
+                    "sudo sed -i -E 's/^#?Port .*/Port {$port}/' /etc/ssh/sshd_config\n" .
+                    "sudo ufw allow {$port}/tcp 2>/dev/null || true\n" .
+                    "sudo systemctl restart ssh"
+                );
             }
 
             if (!@ssh2_auth_password($connection, $username, $password)) {
@@ -969,7 +986,6 @@ echo curl_get_contents("$site");
 
         $request->validate([
             'remote_backup_host' => 'required|string|max:255',
-            'remote_backup_folder' => 'nullable|string|max:500',
             'remote_backup_username' => 'required|string|max:255',
             'remote_backup_password' => 'nullable|string|max:1000',
             'remote_backup_port' => 'required|integer|min:1|max:65535',
@@ -979,7 +995,7 @@ echo curl_get_contents("$site");
         $settings = Settings::firstOrFail();
 
         $settings->remote_backup_host = trim($request->input('remote_backup_host'));
-        $settings->remote_backup_folder = trim((string) $request->input('remote_backup_folder'));
+        $settings->remote_backup_folder = self::REMOTE_BACKUP_FOLDER;
         $settings->remote_backup_username = trim($request->input('remote_backup_username'));
         $settings->remote_backup_port = (int) $request->input('remote_backup_port');
         $settings->remote_backup_enabled = $request->boolean('remote_backup_enabled');
