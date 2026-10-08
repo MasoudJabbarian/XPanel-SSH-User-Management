@@ -32,6 +32,22 @@
           <button class="btn btn-primary" type="submit">Save settings</button>
         </form>
         <hr>
+        <div class="card border mb-3">
+          <div class="card-body">
+            <h5 class="mb-2">اجرای دستی بکاپ</h5>
+            <p class="text-muted mb-3">
+              با اجرای این عملیات، ابتدا از دیتابیس بکاپ گرفته می‌شود و سپس اتصال SSH/SFTP، احراز هویت، مسیر مقصد و انتقال کامل فایل بررسی می‌شود.
+              نتیجه دقیق خطا نیز در همین صفحه ثبت خواهد شد.
+            </p>
+            <form method="post" action="{{ route('settings.remote-backup.run') }}" onsubmit="return confirm('بکاپ جدید ساخته و به سرور بکاپ ارسال شود؟');">
+              @csrf
+              <button class="btn btn-success" type="submit">
+                اجرای بکاپ و ارسال الآن
+              </button>
+            </form>
+          </div>
+        </div>
+        <hr>
         <div class="d-flex flex-wrap align-items-center gap-2">
           <form method="post" action="{{ route('settings.remote-backup.restore') }}" onsubmit="return confirm('پنج فایل آخر بکاپ از سرور بکاپ خوانده و روی سرور اصلی کپی شوند؟');">
             @csrf
