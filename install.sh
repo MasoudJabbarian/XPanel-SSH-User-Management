@@ -342,6 +342,9 @@ EOF
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Http/Controllers/SettingsController.php" -o /var/www/html/app/app/Http/Controllers/SettingsController.php
     # Apply the corrected SSH user traffic accounting implementation.
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Http/Controllers/FixerController.php" -o /var/www/html/app/app/Http/Controllers/FixerController.php
+    # Apply the corrected admin authentication controller.
+    sudo mkdir -p "/var/www/html/app/app/Http/Controllers/Auth"
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Http/Controllers/Auth/LoginController.php" -o /var/www/html/app/app/Http/Controllers/Auth/LoginController.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/database/migrations/2026_10_07_000001_add_remote_backup_settings.php" -o /var/www/html/app/database/migrations/2026_10_07_000001_add_remote_backup_settings.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/database/migrations/2026_10_07_000002_switch_remote_backup_to_sftp.php" -o /var/www/html/app/database/migrations/2026_10_07_000002_switch_remote_backup_to_sftp.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/layouts/setting_menu.blade.php" -o /var/www/html/app/resources/views/layouts/setting_menu.blade.php
@@ -685,7 +688,6 @@ END
 }
 
 checkDATABASE() {
-  # Reinstall-safe database/user setup. An existing XPanel_plus database is valid.
   mysql -e "CREATE DATABASE IF NOT EXISTS XPanel_plus;" &
   wait
   mysql -e "CREATE USER IF NOT EXISTS '${adminusername}'@'localhost' IDENTIFIED BY '${adminpassword}';" &
@@ -694,33 +696,51 @@ checkDATABASE() {
   wait
   mysql -e "GRANT ALL ON XPanel_plus.* TO '${adminusername}'@'localhost';" &
   wait
-  sed -i "s/DB_USERNAME=.*/DB_USERNAME=$adminusername/g" /var/www/html/app/.env
-  sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$adminpassword/g" /var/www/html/app/.env
+  sed -i "s/DB_USERNAME=.*/DB_USERNAME=${adminusername}/g" /var/www/html/app/.env
+  sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${adminpassword}/g" /var/www/html/app/.env
   sed -i "s/DB_DATABASE=.*/DB_DATABASE=XPanel_plus/g" /var/www/html/app/.env
   cd /var/www/html/app
-  # Clear any release config cache so Laravel reads the credentials configured above.
   php artisan config:clear
   php artisan cache:clear || true
-  if ! mysql -u"$adminusername" -p"$adminpassword" -h127.0.0.1 -e "USE XPanel_plus; SELECT 1;" >/dev/null 2>&1; then
-    echo "ERROR: MySQL login failed for the configured XPanel database user: $adminusername"
+  if ! mysql -u"${adminusername}" -p"${adminpassword}" -h127.0.0.1 -e "USE XPanel_plus; SELECT 1;" >/dev/null 2>&1; then
+    echo "ERROR: MySQL login failed for the configured XPanel database user: ${adminusername}"
     echo "Database: XPanel_plus"
     exit 1
   fi
   php artisan migrate
-  if [ -n "$adminuser" -a "$adminuser" != "NULL" ]; then
-    mysql -e "USE XPanel_plus; UPDATE admins SET username = '${adminusername}' where permission='admin';"
-    mysql -e "USE XPanel_plus; UPDATE admins SET password = '${adminpassword}' where permission='admin';"
-    mysql -e "USE XPanel_plus; UPDATE settings SET ssh_port = '${port}' where id='1';"
-    php artisan clear-compiled
-    php artisan cache:clear
-    php artisan config:clear
-    php artisan view:clear
-
+  if [ -n "$adminuser" ] && [ "$adminuser" != "NULL" ]; then
+    mysql -e "USE XPanel_plus; UPDATE admins SET username = '${adminusername}' WHERE permission='admin';"
+    php artisan tinker --execute='
+      use App\Models\Admins;
+      $admin = Admins::where("permission", "admin")->first();
+      if (!$admin) { echo "ERROR: Admin account was not found after migration." . PHP_EOL; exit(1); }
+      $admin->username = env("DB_USERNAME");
+      $admin->password = env("DB_PASSWORD");
+      $admin->status = "active";
+      $admin->permission = "admin";
+      $admin->save();
+      echo "Admin credentials initialized with a Laravel password hash." . PHP_EOL;
+    '
+    mysql -e "USE XPanel_plus; UPDATE settings SET ssh_port = '$port' WHERE id='1';"
   else
-    mysql -e "USE XPanel_plus; INSERT INTO admins (username, password, permission, credit, status) VALUES ('${adminusername}', '${adminpassword}', 'admin', '', 'active');"
-    home_url=$protcohttp://${defdomain}:$sshttp
-    mysql -e "USE XPanel_plus; INSERT INTO settings (ssh_port, tls_port, t_token, t_id, language, multiuser, ststus_multiuser, home_url) VALUES ('${port}', '444', '', '', '', 'active', '', '${home_url}');"
+    php artisan tinker --execute='
+      use App\Models\Admins;
+      $admin = new Admins();
+      $admin->username = env("DB_USERNAME");
+      $admin->password = env("DB_PASSWORD");
+      $admin->permission = "admin";
+      $admin->credit = "0";
+      $admin->status = "active";
+      $admin->save();
+      echo "Admin account created with a Laravel password hash." . PHP_EOL;
+    '
+    home_url=$protcohttp${defdomain}:$sshttp
+    mysql -e "USE XPanel_plus; INSERT INTO settings (ssh_port, tls_port, t_token, t_id, language, multiuser, ststus_multiuser, home_url) VALUES ('$port', '444', '', '', '', 'active', '', '$home_url');"
   fi
+  php artisan clear-compiled
+  php artisan cache:clear || true
+  php artisan config:clear
+  php artisan view:clear
 }
 moreCONFIG() {
   sed -i "s/PORT_SSH=.*/PORT_SSH=$port/g" /var/www/html/app/.env
