@@ -67,13 +67,7 @@
                                 <span class="pc-mtext">SSH</span>
                             </a>
                         </li>
-                        <li class="pc-item">
-                            <a href="{{route('users.sb')}}" class="pc-link">
-                                <span class="pc-micon"><i class="ti ti-shield-lock"></i></span>
-                                <span class="pc-mtext">SING-BOX</span>
-                            </a>
-                        </li>
-                    </ul>
+                        </ul>
                 </li>
 
                 <li class="pc-item">
@@ -89,12 +83,6 @@
                 <li class="pc-item pc-caption">
                     <label>{{__('menu-other')}}</label>
                     <i class="ti ti-chart-arcs"></i>
-                </li>
-                <li class="pc-item">
-                    <a href="{{route('filtering')}}" class="pc-link">
-                        <i data-feather="target"></i>
-                        <span class="pc-mtext">{{__('menu-filtering')}}</span>
-                    </a>
                 </li>
                 <li class="pc-item">
                     <a href="{{route('admins')}}" class="pc-link">
