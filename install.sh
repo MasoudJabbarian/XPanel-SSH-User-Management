@@ -710,6 +710,9 @@ moreCONFIG() {
   sed -i "s/PORT_SSH=.*/PORT_SSH=$port/g" /var/www/html/app/.env
   sed -i "s/PORT_UDPGW=.*/PORT_UDPGW=$udpport/g" /var/www/html/app/.env
   sudo chown -R www-data:www-data /var/www/html/app
+  sudo mkdir -p /var/www/html/app/storage/app/backup
+  sudo chown -R www-data:www-data /var/www/html/app/storage/app/backup
+  sudo chmod 0755 /var/www/html/app/storage/app/backup
   crontab -r
   (crontab -l 2>/dev/null | grep -v "artisan schedule:run"; echo "* * * * * cd /var/www/html/app && php artisan schedule:run >> /dev/null 2>&1") | crontab -
   wait
