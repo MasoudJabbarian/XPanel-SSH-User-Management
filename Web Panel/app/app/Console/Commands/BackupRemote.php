@@ -67,6 +67,7 @@ class BackupRemote extends Command
 
             $host = trim($host, '/');
             $folder = self::REMOTE_BACKUP_FOLDER;
+            $remoteFolder = $folder;
             $username = trim((string) $settings->remote_backup_username);
             $password = (string) $settings->remote_backup_password;
             $port = $configuredPort;
