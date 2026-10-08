@@ -11,7 +11,19 @@ die(){ echo "ERROR: $*" >&2; exit 1; }
 [[ "${EUID}" -eq 0 ]] || die "Run as root."
 [[ -f /etc/os-release ]] || die "Cannot detect operating system."
 . /etc/os-release
-[[ "${ID}" == "ubuntu" && "${VERSION_ID}" == "24.04" ]] || die "This installer supports Ubuntu 24.04 only."
+[[ "${ID}" == "ubuntu" ]] || die "This installer supports Ubuntu only."
+UBUNTU_MAJOR="${VERSION_ID%%.*}"
+[[ "$UBUNTU_MAJOR" =~ ^[0-9]+$ ]] && (( UBUNTU_MAJOR >= 22 )) || die "This installer supports Ubuntu 22.04 or newer."
+
+# PHP 8.3 is native on Ubuntu 24.04. On Ubuntu 22.04, use the maintained
+# Ondrej PHP repository so the same Laravel-compatible PHP version is available.
+if [[ "$UBUNTU_MAJOR" == "22" ]]; then
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update
+  apt-get install -y software-properties-common ca-certificates
+  add-apt-repository ppa:ondrej/php -y
+  apt-get update
+fi
 
 validate_user(){ [[ "$1" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; }
 validate_port(){ [[ "$1" =~ ^[0-9]+$ ]] && (($1>=1 && $1<=65535)); }
