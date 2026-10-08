@@ -93,11 +93,34 @@ class SettingsController extends Controller
         if($name=='backup') {
             $token_bot=env('BOT_TOKEN');
             $id_admin=env('BOT_ID_ADMIN');
+            // The backup tab must show every local backup, regardless of whether
+            // it was created manually, uploaded, or downloaded from remote backup.
             $backupDir = storage_path('app/backup');
             if (!is_dir($backupDir)) {
                 @mkdir($backupDir, 0755, true);
             }
-            $lists = glob($backupDir . '/*.sql') ?: [];
+
+            $lists = [];
+            foreach ([$backupDir, '/var/www/html/app/storage/backup'] as $dir) {
+                if (!is_dir($dir)) {
+                    continue;
+                }
+
+                foreach (glob(rtrim($dir, '/') . '/*') ?: [] as $file) {
+                    if (!is_file($file)) {
+                        continue;
+                    }
+
+                    // Keep all database-backup formats that the panel can store.
+                    if (!preg_match('/\\.(sql|sql\\.gz|dump|dump\\.gz)$/i', basename($file))) {
+                        continue;
+                    }
+
+                    $lists[basename($file)] = $file;
+                }
+            }
+
+            $lists = array_values($lists);
             usort($lists, function ($a, $b) {
                 return (@filemtime($b) ?: 0) <=> (@filemtime($a) ?: 0);
             });
@@ -520,9 +543,61 @@ class SettingsController extends Controller
     public function make_backup()
     {
         $this->check();
-        $date = date("Y-m-d---h-i-s");
-        Process::run("mysqldump -u '" .env('DB_USERNAME'). "' --password='" .env('DB_PASSWORD'). "' XPanel_plus > /var/www/html/app/storage/backup/XPanel-".$date.".sql");
-        return redirect()->intended(route('settings', ['name' => 'backup']));
+
+        $backupDir = storage_path('app/backup');
+        if (!is_dir($backupDir) && !mkdir($backupDir, 0755, true) && !is_dir($backupDir)) {
+            return redirect()->intended(route('settings', ['name' => 'backup']))
+                ->withErrors(['backup' => 'Unable to create the local backup directory.']);
+        }
+
+        $date = date("Y-m-d---H-i-s");
+        $backupPath = $backupDir . '/XPanel-' . $date . '.sql';
+
+        // Use a temporary MySQL defaults file instead of putting the database
+        // password into a shell command. This also works with special characters
+        // in DB_PASSWORD and lets us detect a real mysqldump failure.
+        $defaultsPath = $backupDir . '/.backup-' . bin2hex(random_bytes(8));
+        file_put_contents($defaultsPath, implode(PHP_EOL, [
+            '[client]',
+            'host=' . env('DB_HOST', '127.0.0.1'),
+            'port=' . env('DB_PORT', '3306'),
+            'user=' . env('DB_USERNAME'),
+            'password=' . env('DB_PASSWORD'),
+            '',
+        ]));
+        chmod($defaultsPath, 0600);
+
+        try {
+            $result = Process::timeout(120)->run([
+                '/usr/bin/mysqldump',
+                '--defaults-extra-file=' . $defaultsPath,
+                '--single-transaction',
+                '--quick',
+                '--routines',
+                '--triggers',
+                env('DB_DATABASE', 'XPanel_plus'),
+            ]);
+
+            if ($result->failed()) {
+                throw new RuntimeException(trim($result->errorOutput()) ?: 'mysqldump failed.');
+            }
+
+            if (file_put_contents($backupPath, $result->output()) === false || !is_file($backupPath) || filesize($backupPath) < 1) {
+                throw new RuntimeException('The backup file was not created correctly.');
+            }
+
+            @chown($backupPath, 'www-data');
+            @chgrp($backupPath, 'www-data');
+
+            return redirect()->intended(route('settings', ['name' => 'backup']))
+                ->with('success', 'Backup created successfully: ' . basename($backupPath));
+        } catch (\Throwable $e) {
+            @unlink($backupPath);
+            return redirect()->intended(route('settings', ['name' => 'backup']))
+                ->withErrors(['backup' => 'Backup creation failed: ' . $e->getMessage()]);
+        } finally {
+            @unlink($defaultsPath);
+        }
     }
     public function download_backup(Request $request,$name)
     {
