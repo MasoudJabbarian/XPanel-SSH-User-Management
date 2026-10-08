@@ -345,6 +345,8 @@ EOF
     # Apply the corrected admin authentication controller.
     sudo mkdir -p "/var/www/html/app/app/Http/Controllers/Auth"
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Http/Controllers/Auth/LoginController.php" -o /var/www/html/app/app/Http/Controllers/Auth/LoginController.php
+    # Ensure the admin model hashes passwords assigned through Eloquent.
+    sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/app/Models/Admins.php" -o /var/www/html/app/app/Models/Admins.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/database/migrations/2026_10_07_000001_add_remote_backup_settings.php" -o /var/www/html/app/database/migrations/2026_10_07_000001_add_remote_backup_settings.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/database/migrations/2026_10_07_000002_switch_remote_backup_to_sftp.php" -o /var/www/html/app/database/migrations/2026_10_07_000002_switch_remote_backup_to_sftp.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/layouts/setting_menu.blade.php" -o /var/www/html/app/resources/views/layouts/setting_menu.blade.php
