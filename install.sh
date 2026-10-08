@@ -690,7 +690,16 @@ checkDATABASE() {
   wait
   sed -i "s/DB_USERNAME=.*/DB_USERNAME=$adminusername/g" /var/www/html/app/.env
   sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$adminpassword/g" /var/www/html/app/.env
+  sed -i "s/DB_DATABASE=.*/DB_DATABASE=XPanel_plus/g" /var/www/html/app/.env
   cd /var/www/html/app
+  # Clear any release config cache so Laravel reads the credentials configured above.
+  php artisan config:clear
+  php artisan cache:clear || true
+  if ! mysql -u"$adminusername" -p"$adminpassword" -h127.0.0.1 -e "USE XPanel_plus; SELECT 1;" >/dev/null 2>&1; then
+    echo "ERROR: MySQL login failed for the configured XPanel database user: $adminusername"
+    echo "Database: XPanel_plus"
+    exit 1
+  fi
   php artisan migrate
   if [ -n "$adminuser" -a "$adminuser" != "NULL" ]; then
     mysql -e "USE XPanel_plus; UPDATE admins SET username = '${adminusername}' where permission='admin';"
