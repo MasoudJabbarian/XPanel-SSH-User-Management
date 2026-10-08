@@ -31,7 +31,7 @@ curl -fsSL --retry 3 --retry-delay 2 \
 
 mkdir -p "$EXTRACT_DIR"
 tar -xzf "$ARCHIVE" -C "$EXTRACT_DIR" --strip-components=1
-[[ -f "$EXTRACT_DIR/install.sh" ]] || die "Installer was not found in master archive."
+[[ -f "$EXTRACT_DIR/install-master.sh" ]] || die "Installer implementation was not found in master archive."
 
-chmod 0755 "$EXTRACT_DIR/install.sh"
-"$EXTRACT_DIR/install.sh"
+chmod 0755 "$EXTRACT_DIR/install-master.sh"
+"$EXTRACT_DIR/install-master.sh"
