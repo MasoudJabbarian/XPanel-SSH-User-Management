@@ -882,7 +882,10 @@ echo curl_get_contents("$site");
 
             $dir = @opendir('ssh2.sftp://' . intval($sftp) . $remoteFolder);
             if (!$dir) {
-                throw new \RuntimeException('Unable to read the remote backup folder.');
+                throw new \RuntimeException("Unable to read the remote backup folder {$remoteFolder}.\n\nروی سرور بکاپ اجرا کنید:\n" .
+                    "sudo mkdir -p /var/backups/xpanel\n" .
+                    "sudo chown -R {$username}:{$username} /var/backups/xpanel\n" .
+                    "sudo chmod 750 /var/backups/xpanel");
             }
 
             $files = [];
