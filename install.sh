@@ -342,9 +342,8 @@ EOF
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/layouts/setting_menu.blade.php" -o /var/www/html/app/resources/views/layouts/setting_menu.blade.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/resources/views/settings/remote-backup.blade.php" -o /var/www/html/app/resources/views/settings/remote-backup.blade.php
     sudo curl -fsSL "$FEATURE_RAW/Web%20Panel/app/routes/web.php" -o /var/www/html/app/routes/web.php
-    cd /var/www/html/app
-    php artisan migrate --force
-    wait
+    # Do not run migrations here: the database credentials are finalized later in checkDATABASE().
+    # Running artisan migrate before that would use the placeholder DB credentials from the release .env.
     fi
 
     sudo wget -4 -O /usr/local/bin/cronx https://raw.githubusercontent.com/xpanel-cp/XPanel-SSH-User-Management/master/cronx
