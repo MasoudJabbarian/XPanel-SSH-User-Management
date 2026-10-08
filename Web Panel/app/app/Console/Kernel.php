@@ -13,6 +13,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('backup:remote')->everyMinute()->withoutOverlapping();
+        $schedule->command('traffic:collect')->everyMinute()->withoutOverlapping(2);
     }
 
     /**
