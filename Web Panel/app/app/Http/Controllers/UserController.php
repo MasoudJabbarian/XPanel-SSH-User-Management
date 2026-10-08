@@ -321,7 +321,7 @@ class UserController extends Controller
 
         if ($request->re_date === 'yes') {
             $base = $request->renewal_date ?: ($user->end_date && now()->lt($user->end_date) ? $user->end_date : now()->toDateString());
-            $user->end_date = CarbonCarbon::parse($base)->addDays((int) $request->day_date)->toDateString();
+            $user->end_date = \Carbon\Carbon::parse($base)->addDays((int) $request->day_date)->toDateString();
             $user->status = 'active';
             $this->activateSystemUser($user);
         }
