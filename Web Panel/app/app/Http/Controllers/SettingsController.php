@@ -93,10 +93,15 @@ class SettingsController extends Controller
         if($name=='backup') {
             $token_bot=env('BOT_TOKEN');
             $id_admin=env('BOT_ID_ADMIN');
-            $list = Process::run("ls /var/www/html/app/storage/backup");
-            $output = $list->output();
-            $backuplist = preg_split("/\r\n|\n|\r/", $output);
-            $lists=$backuplist;
+            $backupDir = storage_path('app/backup');
+            if (!is_dir($backupDir)) {
+                @mkdir($backupDir, 0755, true);
+            }
+            $lists = glob($backupDir . '/*.sql') ?: [];
+            usort($lists, function ($a, $b) {
+                return (@filemtime($b) ?: 0) <=> (@filemtime($a) ?: 0);
+            });
+            $lists = array_map('basename', $lists);
             $domain=explode(':',$_SERVER['HTTP_HOST']);
             $domain=$domain[0];
             $webhook_url = 'https://'.$domain.'/sync.php?bot=y';
@@ -526,9 +531,9 @@ class SettingsController extends Controller
             abort(400, 'Not Valid Username');
         }
         $fileName = $name;
-        $filePath = storage_path('backup/'.$fileName);
+        $filePath = storage_path('app/backup/'.$fileName);
 
-        if (file_exists('/var/www/html/app/storage/backup/'.$fileName)) {
+        if (file_exists(storage_path('app/backup/'.$fileName))) {
             return response()->download($filePath, $fileName, [
                 'Content-Type' => 'text/plain',
                 'Content-Disposition' => 'attachment',
@@ -941,10 +946,10 @@ echo curl_get_contents("$site");
                 $restored++;
             }
 
-            return redirect()->route('settings.remote-backup')
+            return redirect()->back()
                 ->with('success', $restored . ' latest backup file(s) were restored from the backup server.');
         } catch (\Throwable $e) {
-            return redirect()->route('settings.remote-backup')
+            return redirect()->back()
                 ->withErrors(['remote_backup' => $e->getMessage()]);
         }
     }
