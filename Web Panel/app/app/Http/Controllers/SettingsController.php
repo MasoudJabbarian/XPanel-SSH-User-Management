@@ -934,7 +934,10 @@ echo curl_get_contents("$site");
                     if (is_resource($target)) {
                         fclose($target);
                     }
-                    throw new \RuntimeException('Unable to download backup file: ' . $file['name']);
+                    throw new \RuntimeException('Unable to download backup file: ' . $file['name'] . "\n\nاگر پوشه محلی بکاپ دسترسی نوشتن ندارد، روی سرور فعلی اجرا کنید:\n" .
+                        "sudo mkdir -p /var/www/html/app/storage/app/backup\n" .
+                        "sudo chown -R www-data:www-data /var/www/html/app/storage/app/backup\n" .
+                        "sudo chmod 755 /var/www/html/app/storage/app/backup");
                 }
 
                 $copied = stream_copy_to_stream($source, $target);
